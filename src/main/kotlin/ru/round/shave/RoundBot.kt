@@ -5,22 +5,32 @@ import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
-import com.github.kotlintelegrambot.entities.*
+import com.github.kotlintelegrambot.entities.CallbackQuery
+import com.github.kotlintelegrambot.entities.ChatId
+import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
+import com.github.kotlintelegrambot.entities.ReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import ru.round.shave.callback.ServiceCallbackHandler
+import ru.round.shave.callback.ChooseDateCallbackHandler
+import ru.round.shave.callback.ChooseServiceCallbackHandler
+import ru.round.shave.callback.ChooseTimeCallbackHandler
 import ru.round.shave.entity.Service
-import ru.round.shave.entity.TimeRange
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
+import ru.round.shave.entity.User
+import ru.round.shave.service.StateService
+import ru.round.shave.service.TimeService
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.annotation.PostConstruct
-import kotlin.random.Random
 
 @Component
 class RoundBot {
+
+    @Autowired
+    private lateinit var stateService: StateService
+
+    @Autowired
+    private lateinit var timeService: TimeService
 
     @PostConstruct
     fun run() {
@@ -28,16 +38,48 @@ class RoundBot {
             token = TOKEN
             dispatch {
                 command("start") {
-                    sendInitialMessage(bot, message)
+                    val chatId = ChatId.fromId(message.chat.id)
+                    bot.sendMessage(chatId, "Вас приветствует Round Shave Bot!")
+                    sendInitialMessage(bot, chatId)
+                }
+
+                callbackQuery(data = CALLBACK_DATA_RESET) {
+                    val chatId = ChatId.fromId(this.callbackQuery.message!!.chat.id)
+                    sendInitialMessage(bot, chatId)
+                }
+
+                callbackQuery(data = CALLBACK_DATA_CONFIRM) {
+                    val user = User.from(callbackQuery.from)
+                    val state = stateService.getState(user)
+                    val chatId = ChatId.fromId(this.callbackQuery.message!!.chat.id)
+                    if (state == null || !state.isFull()) {
+                        bot.sendMessage(
+                            chatId,
+                            "К сожалению, произошла ошибка. Повторите процедуру записи."
+                        )
+                        return@callbackQuery
+                    }
+                    println("Confirmed state: $state")
+                    bot.sendMessage(
+                        chatId,
+                        "Запись подтверждена. Ждём вас " +
+                                "${VISIBLE_DATE_FORMATTER_FULL.format(state.day)} в " +
+                                "${VISIBLE_TIME_FORMATTER.format(state.time)} по адресу: 2-я Магистральная ул., 3с3."
+                    )
                 }
 
                 callbackQuery {
                     val callbackData = this.callbackQuery.data
-                    val chatId = ChatId.fromId(this.callbackQuery.message!!.chat.id)
-                    if (ServiceCallbackHandler.canHandle(callbackData)) {
-                        val chosenService = ServiceCallbackHandler.convertFromCallbackData(callbackData)
-                        bot.sendMessage(chatId, "Выбрано: ${chosenService.userVisibleName}")
-                        val userId = this.callbackQuery.from.id
+                    when {
+                        ChooseServiceCallbackHandler.canHandle(callbackData) -> {
+                            handleServiceChosen(bot, this.callbackQuery)
+                        }
+                        ChooseDateCallbackHandler.canHandle(callbackData) -> {
+                            handleDayChosen(bot, this.callbackQuery)
+                        }
+                        ChooseTimeCallbackHandler.canHandle(callbackData) -> {
+                            handleTimeChosen(bot, this.callbackQuery)
+                        }
                     }
                 }
             }
@@ -45,88 +87,122 @@ class RoundBot {
         bot.startPolling()
     }
 
-    private fun sendInitialMessage(bot: Bot, message: Message) {
-        val chatId = ChatId.fromId(message.chat.id)
+    private fun sendInitialMessage(bot: Bot, chatId: ChatId) {
         bot.sendMessage(
             chatId,
-            "Привет! Выбери тип услуги.",
+            "Выберите тип услуги.",
             replyMarkup = createChooseServiceKeyboard()
         )
     }
 
+    private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery) {
+        val chosenService = ChooseServiceCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = User.from(callbackQuery.from)
+        stateService.saveSelectedService(user, chosenService)
+        bot.sendMessage(
+            chatId,
+            "Выберите день посещения.",
+            replyMarkup = createChooseDayKeyboard()
+        )
+    }
+
+    private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery) {
+        val chosenDate = ChooseDateCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val slots = timeService.getFreeSlots(chosenDate)
+        if (slots.isEmpty()) {
+            bot.sendMessage(
+                chatId,
+                "К сожалению, запись на ${VISIBLE_DATE_FORMATTER.format(chosenDate)} недоступна. Выберите другую дату.",
+                replyMarkup = createChooseDayKeyboard()
+            )
+            return
+        }
+
+        val user = User.from(callbackQuery.from)
+        stateService.saveSelectedDay(user, chosenDate)
+
+        val list = mutableListOf<InlineKeyboardButton.CallbackData>()
+        for (slot in slots) {
+            val callbackData = ChooseTimeCallbackHandler.convertToCallbackData(slot)
+            val button = InlineKeyboardButton.CallbackData(VISIBLE_TIME_FORMATTER.format(slot), callbackData)
+            list.add(button)
+        }
+
+        bot.sendMessage(
+            chatId,
+            "Выберите время посещения.",
+            replyMarkup = InlineKeyboardMarkup.create(list.chunked(4))
+        )
+
+    }
+
     private fun createChooseServiceKeyboard(): ReplyMarkup {
         val buttons = Service.values().map {
-            val callbackData = ServiceCallbackHandler.convertToCallbackData(it)
+            val callbackData = ChooseServiceCallbackHandler.convertToCallbackData(it)
             InlineKeyboardButton.CallbackData(it.userVisibleName, callbackData)
         }
         return InlineKeyboardMarkup.create(buttons.chunked(2))
     }
 
-    private fun onUserHasChosenDate(date: LocalDate, bot: Bot, chat: Chat) {
-        val freeSlots = getFreeSlots(date)
-        val chatId = ChatId.fromId(chat.id)
-        if (freeSlots.isEmpty()) {
-            val formatter = DATE_FORMATTER_FULL
+    private fun createChooseDayKeyboard(): ReplyMarkup {
+        val daysAvailable = 12
+        val list = mutableListOf<InlineKeyboardButton.CallbackData>()
+
+        timeService.getDaysThatHaveFreeSlots(daysAvailable).forEach { current ->
+            val callbackData = ChooseDateCallbackHandler.convertToCallbackData(current)
+            val button = InlineKeyboardButton.CallbackData(VISIBLE_DATE_FORMATTER.format(current), callbackData)
+            list.add(button)
+        }
+        return InlineKeyboardMarkup.create(list.chunked(4))
+    }
+
+    private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery) {
+        val chosenTime = ChooseTimeCallbackHandler.convertFromCallbackData(callbackQuery.data)
+
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = User.from(callbackQuery.from)
+        stateService.saveSelectedTime(user, chosenTime)
+
+        val currentState = stateService.getState(user)
+        if (currentState == null || !currentState.isFull()) {
             bot.sendMessage(
-                chatId = chatId,
-                text = "К сожалению, запись на ${formatter.format(date)} недоступна."
+                chatId,
+                "К сожалению, произошла ошибка. Повторите процедуру записи."
             )
+            return
         }
 
+
         bot.sendMessage(
-            chatId,
-            "Дата: ${DATE_FORMATTER_FULL.format(date)}. Выбери время",
-            replyMarkup = getKeyboardWithSlots(freeSlots)
+            chatId = chatId,
+            text = listOf(
+                "Выбранная услуга: ${currentState.service!!.userVisibleName}",
+                "Дата и время: ${currentState.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
+                    currentState.time!!.format(VISIBLE_TIME_FORMATTER)
+                }",
+                "Всё правильно?",
+            ).joinToString(separator = "\n"),
+            replyMarkup = createConfirmKeyboard()
         )
     }
 
-    private fun getFreeSlots(date: LocalDate): List<TimeRange> {
-        // query db
-        val count = Random.Default.nextInt(9)
-        val list = mutableListOf<TimeRange>()
-        var hour = 10
-        for (i in 0 until count) {
-            val start = LocalDateTime.of(date, LocalTime.of(hour, 0))
-            val end = start.plusHours(1L)
-            list.add(TimeRange(start, end))
-            hour++
-        }
-        return list
+    private fun createConfirmKeyboard(): ReplyMarkup {
+        val confirmButton = InlineKeyboardButton.CallbackData("Записаться", CALLBACK_DATA_CONFIRM)
+        val resetButton = InlineKeyboardButton.CallbackData("В начало", CALLBACK_DATA_RESET)
+        return InlineKeyboardMarkup.createSingleRowKeyboard(confirmButton, resetButton)
     }
-
-    private fun getKeyboardWithSlots(slots: List<TimeRange>): ReplyMarkup {
-        val buttons = slots
-            .map { "${TIME_FORMATTER.format(it.start)} - ${TIME_FORMATTER.format(it.end)}" }
-            .map { InlineKeyboardButton.CallbackData(it, "HZ CHTO TUT") }
-            .chunked(3)
-        return InlineKeyboardMarkup.create(buttons)
-    }
-
-
-    private fun createInitialKeyboard(): ReplyMarkup {
-        var current = LocalDate.now(TIME_ZONE)
-        val list = mutableListOf<InlineKeyboardButton.CallbackData>()
-        for (i in 0 until DAYS_AVAILABLE) {
-            val button =
-                InlineKeyboardButton.CallbackData(DATE_FORMATTER_SHORT.format(current), CHOOSE_DATE_CALLBACK_DATA)
-            list.add(button)
-            current = current.plusDays(1L)
-        }
-        return InlineKeyboardMarkup.createSingleRowKeyboard(list)
-    }
-
 
     companion object {
         private const val TOKEN = "1877093277:AAEG_rkWcXzVp9jqmDjwmK6Fi5cmHY4JZyI"
-        private val TIME_ZONE = ZoneId.of("Europe/Moscow")
+        val TIME_ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 
-        private const val DAYS_AVAILABLE = 5
+        private val VISIBLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM")
+        private val VISIBLE_DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        private val VISIBLE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
 
-        private val DATE_FORMATTER_SHORT = DateTimeFormatter.ofPattern("dd.MM")
-        private val DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm")
-
-        private const val CHOOSE_SERVICE_CALLBACK_DATA = "choose_service"
-        private const val CHOOSE_DATE_CALLBACK_DATA = "choose_date"
+        private val CALLBACK_DATA_RESET = "reset"
+        private val CALLBACK_DATA_CONFIRM = "confirm"
     }
 }

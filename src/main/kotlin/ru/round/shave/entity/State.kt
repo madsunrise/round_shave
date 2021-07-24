@@ -8,4 +8,12 @@ data class State(
     val service: Service? = null,
     val day: LocalDate? = null,
     val time: LocalTime? = null
-)
+) {
+    fun isFull(): Boolean {
+        return service != null && day != null && time != null
+    }
+
+    companion object {
+        fun empty(user: User) = State(user = user, service = null, day = null, time = null)
+    }
+}
