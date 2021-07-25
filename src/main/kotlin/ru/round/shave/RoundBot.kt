@@ -141,9 +141,9 @@ class RoundBot {
     private fun createChooseServiceKeyboard(): ReplyMarkup {
         val buttons = Service.values().map {
             val callbackData = ChooseServiceCallbackHandler.convertToCallbackData(it)
-            InlineKeyboardButton.CallbackData(it.userVisibleName, callbackData)
+            InlineKeyboardButton.CallbackData(it.getDisplayName(), callbackData)
         }
-        return InlineKeyboardMarkup.create(buttons.chunked(2))
+        return InlineKeyboardMarkup.create(buttons.chunked(1))
     }
 
     private fun createChooseDayKeyboard(): ReplyMarkup {
@@ -178,7 +178,7 @@ class RoundBot {
         bot.sendMessage(
             chatId = chatId,
             text = listOf(
-                "Выбранная услуга: ${currentState.service!!.userVisibleName}",
+                "Выбранная услуга: ${currentState.service!!.serviceName}",
                 "Дата и время: ${currentState.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
                     currentState.time!!.format(VISIBLE_TIME_FORMATTER)
                 }",
