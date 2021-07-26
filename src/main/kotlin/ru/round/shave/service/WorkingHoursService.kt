@@ -7,4 +7,6 @@ interface WorkingHoursService {
     fun insert(entity: WorkingHours)
 
     fun getWorkingHours(day: LocalDate): WorkingHours?
+
+    fun deleteAllBefore(beforeInclusive: LocalDate): Int
 }

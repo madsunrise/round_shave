@@ -22,4 +22,8 @@ open class WorkingHoursServiceImpl : WorkingHoursService {
     override fun getWorkingHours(day: LocalDate): WorkingHours? {
         return workingHoursDao.getWorkingHours(day)
     }
+
+    override fun deleteAllBefore(beforeInclusive: LocalDate): Int {
+        return workingHoursDao.deleteAllBefore(beforeInclusive)
+    }
 }

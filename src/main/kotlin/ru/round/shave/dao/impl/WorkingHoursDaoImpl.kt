@@ -32,4 +32,12 @@ class WorkingHoursDaoImpl : WorkingHoursDao {
 
         return em.createQuery(query).resultList.firstOrNull()
     }
+
+    override fun deleteAllBefore(beforeInclusive: LocalDate): Int {
+        val cb = em.criteriaBuilder
+        val query = cb.createCriteriaDelete(WorkingHours::class.java)
+        val root = query.from(WorkingHours::class.java)
+        query.where(cb.lessThanOrEqualTo(root.get("day"), beforeInclusive))
+        return em.createQuery(query).executeUpdate()
+    }
 }
