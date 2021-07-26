@@ -1,15 +1,21 @@
 package ru.round.shave.config
 
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.ClassPathResource
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor
 import org.springframework.jdbc.datasource.DriverManagerDataSource
+import org.springframework.jdbc.datasource.init.DataSourceInitializer
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator
 import org.springframework.orm.jpa.JpaTransactionManager
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter
 import org.springframework.transaction.annotation.EnableTransactionManagement
 import java.util.*
 import javax.persistence.EntityManagerFactory
+import javax.sql.DataSource
+
 
 @Configuration
 @EnableTransactionManagement
@@ -32,6 +38,19 @@ open class PersistenceJPAConfig {
                     "useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC"
         username = "root"
         password = "1"
+    }
+
+    /**
+     * Used to prepopulate database
+     */
+    //@Bean
+    open fun dataSourceInitializer(@Qualifier("dataSource") dataSource: DataSource): DataSourceInitializer {
+        val resourceDatabasePopulator = ResourceDatabasePopulator()
+        resourceDatabasePopulator.addScript(ClassPathResource("/data.sql"))
+        val dataSourceInitializer = DataSourceInitializer()
+        dataSourceInitializer.setDataSource(dataSource)
+        dataSourceInitializer.setDatabasePopulator(resourceDatabasePopulator)
+        return dataSourceInitializer
     }
 
     @Bean
