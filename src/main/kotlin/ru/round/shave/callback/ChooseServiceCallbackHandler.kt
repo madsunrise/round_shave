@@ -1,16 +1,17 @@
 package ru.round.shave.callback
 
 import ru.round.shave.entity.Service
+import ru.round.shave.service.ServiceService
 
-object ChooseServiceCallbackHandler : BaseCallbackHandler<Service>() {
+class ChooseServiceCallbackHandler(private val serviceService: ServiceService) : BaseCallbackHandler<Service>() {
 
     override val prefix: String = Prefixes.CHOOSE_SERVICE_PREFIX
 
     override fun encodeData(data: Service): String {
-        return data.name
+        return data.id.toString()
     }
 
     override fun decodeData(value: String): Service {
-        return Service.valueOf(value)
+        return serviceService.getById(value.toLong())!!
     }
 }
