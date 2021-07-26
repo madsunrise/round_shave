@@ -64,7 +64,7 @@ open class PersistenceJPAConfig {
     }
 
     private fun additionalProperties() = Properties().apply {
-        setProperty("hibernate.hbm2ddl.auto", "update")
+        setProperty("hibernate.hbm2ddl.auto", "validate")
         setProperty("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect")
         setProperty("hibernate.dialect.storage_engine", "innodb")
         setProperty("hibernate.show_sql", "false")
