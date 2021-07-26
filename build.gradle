@@ -1,6 +1,6 @@
 buildscript {
-    ext.spring_boot_version = "2.4.2"
-    ext.spring_framework_version = "5.3.3"
+    ext.spring_boot_version = "2.5.3"
+    ext.spring_framework_version = "5.3.9"
 }
 
 plugins {
@@ -18,7 +18,10 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation 'io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.4'
-    //implementation 'org.slf4j:slf4j-simple:1.7.32'
-
     implementation "org.springframework.boot:spring-boot-starter-web:$spring_boot_version"
+
+    // Database
+    implementation "org.springframework:spring-orm:$spring_framework_version"
+    implementation "mysql:mysql-connector-java:8.0.26"
+    implementation "org.hibernate:hibernate-core:5.5.4.Final"
 }
