@@ -46,7 +46,9 @@ class AppointmentDaoImpl : AppointmentDao {
         predicates.add(cb.greaterThanOrEqualTo(root.get("startTime"), from))
         predicates.add(cb.lessThan(root.get("endTime"), to))
 
-        query.select(root)
+        query
+            .select(root)
+            .where(*predicates.toTypedArray())
 
         val afterOrderBy = when (orderBy) {
             AppointmentDao.OrderBy.TIME_ASC -> {
