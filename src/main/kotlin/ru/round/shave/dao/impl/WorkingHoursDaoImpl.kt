@@ -29,6 +29,7 @@ class WorkingHoursDaoImpl : WorkingHoursDao {
 
         query
             .select(root)
+            .where(*predicates.toTypedArray())
 
         return em.createQuery(query).resultList.firstOrNull()
     }
