@@ -34,7 +34,7 @@ class AppointmentDaoImpl : AppointmentDao {
         return em.find(Appointment::class.java, id)
     }
 
-    override fun getAll(day: LocalDate): List<Appointment> {
+    override fun getAll(day: LocalDate, orderBy: AppointmentDao.OrderBy): List<Appointment> {
         val cb = em.criteriaBuilder
         val query = cb.createQuery(Appointment::class.java)
         val root = query.from(Appointment::class.java)
@@ -46,10 +46,14 @@ class AppointmentDaoImpl : AppointmentDao {
         predicates.add(cb.greaterThanOrEqualTo(root.get("startTime"), from))
         predicates.add(cb.lessThan(root.get("endTime"), to))
 
-        query
-            .select(root)
-            .orderBy(cb.asc(root.get<LocalDateTime>("startTime")))
+        query.select(root)
 
-        return em.createQuery(query).resultList
+        val afterOrderBy = when (orderBy) {
+            AppointmentDao.OrderBy.TIME_ASC -> {
+                query.orderBy(cb.asc(root.get<LocalDateTime>("startTime")))
+            }
+        }
+
+        return em.createQuery(afterOrderBy).resultList
     }
 }

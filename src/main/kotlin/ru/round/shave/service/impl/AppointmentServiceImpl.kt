@@ -31,7 +31,13 @@ open class AppointmentServiceImpl : AppointmentService {
         return appointmentDao.getById(id)
     }
 
-    override fun getAll(day: LocalDate): List<Appointment> {
-        return appointmentDao.getAll(day)
+    override fun getAll(day: LocalDate, orderBy: AppointmentService.OrderBy): List<Appointment> {
+        return appointmentDao.getAll(day, mapOrderBy(orderBy))
+    }
+
+    private fun mapOrderBy(orderBy: AppointmentService.OrderBy): AppointmentDao.OrderBy {
+        return when (orderBy) {
+            AppointmentService.OrderBy.TIME_ASC -> AppointmentDao.OrderBy.TIME_ASC
+        }
     }
 }
