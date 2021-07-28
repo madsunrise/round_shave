@@ -3,6 +3,16 @@ use round_shave;
 DELIMITER //
 
 
+CREATE TRIGGER working_hours_validation
+BEFORE INSERT
+   ON working_hours FOR EACH ROW
+BEGIN
+IF NEW.start_time >= NEW.end_time THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'end_time must be after start_time';
+END IF;
+END; //
+
+
 CREATE TRIGGER appointment_validation
 BEFORE INSERT
    ON appointment FOR EACH ROW
