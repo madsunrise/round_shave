@@ -7,14 +7,17 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 interface StateService {
+    fun createNewState(user: User): State
 
-    fun saveSelectedService(user: User, service: Service)
-
-    fun saveSelectedDay(user: User, day: LocalDate)
-
-    fun saveSelectedTime(user: User, time: LocalTime)
-
-    fun getState(user: User): State?
+    fun getUserState(user: User): State?
 
     fun clearState(user: User)
+
+    fun handleServiceChosen(state: State, service: Service): State
+
+    fun handleDayChosen(state: State, day: LocalDate): State
+
+    fun handleTimeChosen(state: State, time: LocalTime): State
+
+    fun isFilled(state: State): Boolean
 }
