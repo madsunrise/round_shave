@@ -12,7 +12,7 @@ import java.time.LocalTime
 
 @org.springframework.stereotype.Service
 @Transactional(rollbackFor = [Exception::class])
-class StateServiceImpl : StateService {
+open class StateServiceImpl : StateService {
 
     @Autowired
     private lateinit var stateDao: StateDao
