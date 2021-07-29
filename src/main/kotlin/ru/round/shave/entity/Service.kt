@@ -26,6 +26,14 @@ data class Service(
     )
 
     fun getDisplayName(): String {
+        return name
+    }
+
+    fun getDisplayNameWithPrice(): String {
         return "$name - $price\u20BD"
+    }
+
+    fun getDisplayPrice(): String {
+        return "$price\u20BD"
     }
 }
