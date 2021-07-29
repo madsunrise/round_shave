@@ -44,7 +44,7 @@ class RoundBot {
     @PostConstruct
     fun run() {
         val bot = bot {
-            token = TOKEN
+            token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
                 command("start") {
                     val chatId = ChatId.fromId(message.chat.id)
@@ -276,7 +276,7 @@ class RoundBot {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
-        private const val TOKEN = "1877093277:AAEG_rkWcXzVp9jqmDjwmK6Fi5cmHY4JZyI"
+        private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
         val TIME_ZONE: ZoneId = ZoneId.of("Europe/Moscow")
 
         private val VISIBLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM")
