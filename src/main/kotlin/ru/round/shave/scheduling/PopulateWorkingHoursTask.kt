@@ -37,8 +37,12 @@ class PopulateWorkingHoursTask {
                 startTime = startHour,
                 endTime = endHour
             )
-            workingHoursService.insert(entity)
-            LOGGER.info("Added: $current")
+            try {
+                workingHoursService.insert(entity)
+                LOGGER.info("Added: $current")
+            } catch (e: Exception) {
+                LOGGER.warn("Failed to add working hours: $entity")
+            }
             current = current.plusDays(1L)
         }
     }
