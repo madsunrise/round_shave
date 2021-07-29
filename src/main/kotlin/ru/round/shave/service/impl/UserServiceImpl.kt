@@ -30,6 +30,10 @@ open class UserServiceImpl : UserService {
         return userDao.getById(id)
     }
 
+    override fun getOrCreate(tgUser: com.github.kotlintelegrambot.entities.User): User {
+        return userDao.getOrCreate(tgUser)
+    }
+
     override fun getAll(): List<User> {
         return userDao.getAll()
     }

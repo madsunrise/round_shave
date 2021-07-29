@@ -47,20 +47,4 @@ data class User(
         canReadAllGroupMessages = null,
         supportsInlineQueries = null
     )
-
-    companion object {
-        fun from(user: com.github.kotlintelegrambot.entities.User): User {
-            return User(
-                id = user.id,
-                isBot = user.isBot,
-                firstName = user.firstName,
-                lastName = user.lastName,
-                username = user.username,
-                languageCode = user.languageCode,
-                canJoinGroups = user.canJoinGroups,
-                canReadAllGroupMessages = user.canReadAllGroupMessages,
-                supportsInlineQueries = user.supportsInlineQueries,
-            )
-        }
-    }
 }

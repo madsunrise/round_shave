@@ -31,6 +31,16 @@ class UserDaoImpl : UserDao {
         return em.find(User::class.java, id)
     }
 
+    override fun getOrCreate(tgUser: com.github.kotlintelegrambot.entities.User): User {
+        val existing = getById(tgUser.id)
+        if (existing != null) {
+            return existing
+        }
+        val newUser = fromFromTg(tgUser)
+        insert(newUser)
+        return newUser
+    }
+
     override fun getAll(): List<User> {
         val cb = em.criteriaBuilder
         val query = cb.createQuery(User::class.java)
@@ -41,5 +51,19 @@ class UserDaoImpl : UserDao {
             .orderBy(cb.asc(root.get<Long>("id")))
 
         return em.createQuery(query).resultList
+    }
+
+    fun fromFromTg(user: com.github.kotlintelegrambot.entities.User): User {
+        return User(
+            id = user.id,
+            isBot = user.isBot,
+            firstName = user.firstName,
+            lastName = user.lastName,
+            username = user.username,
+            languageCode = user.languageCode,
+            canJoinGroups = user.canJoinGroups,
+            canReadAllGroupMessages = user.canReadAllGroupMessages,
+            supportsInlineQueries = user.supportsInlineQueries,
+        )
     }
 }
