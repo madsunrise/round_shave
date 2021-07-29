@@ -8,5 +8,7 @@ interface WorkingHoursDao {
 
     fun getWorkingHours(day: LocalDate): WorkingHours?
 
+    fun getTheMostDistantWorkingHours(): WorkingHours?
+
     fun deleteAllBefore(beforeInclusive: LocalDate): Int
 }

@@ -34,6 +34,18 @@ class WorkingHoursDaoImpl : WorkingHoursDao {
         return em.createQuery(query).resultList.firstOrNull()
     }
 
+    override fun getTheMostDistantWorkingHours(): WorkingHours? {
+        val cb = em.criteriaBuilder
+        val query = cb.createQuery(WorkingHours::class.java)
+        val root = query.from(WorkingHours::class.java)
+
+        query
+            .select(root)
+            .orderBy(cb.desc(root.get<LocalDate>("day")))
+
+        return em.createQuery(query).resultList.firstOrNull()
+    }
+
     override fun deleteAllBefore(beforeInclusive: LocalDate): Int {
         val cb = em.criteriaBuilder
         val query = cb.createCriteriaDelete(WorkingHours::class.java)

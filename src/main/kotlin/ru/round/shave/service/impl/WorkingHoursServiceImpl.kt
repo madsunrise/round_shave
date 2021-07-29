@@ -23,6 +23,10 @@ open class WorkingHoursServiceImpl : WorkingHoursService {
         return workingHoursDao.getWorkingHours(day)
     }
 
+    override fun getTheMostDistantWorkingHours(): WorkingHours? {
+        return workingHoursDao.getTheMostDistantWorkingHours()
+    }
+
     override fun deleteAllBefore(beforeInclusive: LocalDate): Int {
         return workingHoursDao.deleteAllBefore(beforeInclusive)
     }

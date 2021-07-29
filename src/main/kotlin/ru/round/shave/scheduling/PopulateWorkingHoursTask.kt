@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import ru.round.shave.RoundBot
 import ru.round.shave.entity.WorkingHours
 import ru.round.shave.service.WorkingHoursService
 import java.time.DayOfWeek
@@ -21,30 +22,53 @@ class PopulateWorkingHoursTask {
 
     @Scheduled(cron = Cron.POPULATE_WORKING_HOURS)
     fun run() {
-        populate()
         clearOld()
+        populate()
     }
 
     private fun populate() {
         LOGGER.info("Populating working hours")
-        var current = LocalDate.now()
-        while (current.dayOfWeek != DayOfWeek.MONDAY) {
-            current = current.plusDays(1L)
+        val theMostDistant = workingHoursService.getTheMostDistantWorkingHours()
+        if (theMostDistant == null) {
+            LOGGER.info("Populating empty database")
+            populateWhenDatabaseIsEmpty()
+        } else {
+            LOGGER.info("Appending one day")
+            appendOneDay(theMostDistant.day)
         }
-        while (current.dayOfWeek != DayOfWeek.SUNDAY) { // Sunday is a day off
+    }
+
+    private fun populateWhenDatabaseIsEmpty() {
+        var current = LocalDate.now(RoundBot.TIME_ZONE)
+        var count = 0
+        while (count < 14) {
+            while (current.dayOfWeek in DAYS_OFF) {
+                current = current.plusDays(1L)
+            }
             val entity = WorkingHours(
                 day = current,
                 startTime = startHour,
                 endTime = endHour
             )
-            try {
-                workingHoursService.insert(entity)
-                LOGGER.info("Added: $current")
-            } catch (e: Exception) {
-                LOGGER.warn("Failed to add working hours: $entity")
-            }
+            workingHoursService.insert(entity)
+            count++
+            LOGGER.info("Added working hour: $current")
             current = current.plusDays(1L)
         }
+    }
+
+    private fun appendOneDay(theMostDistant: LocalDate) {
+        var current = theMostDistant.plusDays(1L)
+        while (current.dayOfWeek in DAYS_OFF) {
+            current = current.plusDays(1L)
+        }
+        val entity = WorkingHours(
+            day = current,
+            startTime = startHour,
+            endTime = endHour
+        )
+        workingHoursService.insert(entity)
+        LOGGER.info("Added working hour: $current")
     }
 
     private fun clearOld() {
@@ -57,5 +81,6 @@ class PopulateWorkingHoursTask {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(PopulateWorkingHoursTask::class.java.simpleName)
+        private val DAYS_OFF = setOf(DayOfWeek.SUNDAY)
     }
 }
