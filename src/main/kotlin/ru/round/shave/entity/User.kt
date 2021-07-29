@@ -21,7 +21,7 @@ data class User(
     @Column(name = "last_name", nullable = true)
     val lastName: String?,
 
-    @Column(name = "username", nullable = true, unique = true)
+    @Column(name = "username", nullable = true)
     val username: String?,
 
     @Column(name = "language_code", nullable = true, length = 10)
