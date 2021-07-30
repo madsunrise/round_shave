@@ -3,6 +3,8 @@ package ru.round.shave.entity
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import javax.persistence.*
 
 @Entity
@@ -30,7 +32,10 @@ data class Appointment(
     val startTime: LocalDateTime,
 
     @Column(name = "end_time", nullable = false)
-    val endTime: LocalDateTime
+    val endTime: LocalDateTime,
+
+    @Column(name = "created_at", nullable = false)
+    val createdAt: ZonedDateTime = ZonedDateTime.now(ZoneOffset.UTC)
 ) {
     constructor() : this(
         user = User(),
