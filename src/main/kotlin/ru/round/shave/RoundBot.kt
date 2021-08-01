@@ -20,6 +20,7 @@ import ru.round.shave.callback.ChooseTimeCallbackHandler
 import ru.round.shave.entity.Appointment
 import ru.round.shave.entity.Back
 import ru.round.shave.entity.Service
+import ru.round.shave.exception.AlreadyExistException
 import ru.round.shave.service.*
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -138,7 +139,7 @@ class RoundBot {
         val state = stateService.getUserState(user)
 
         if (state == null) {
-            LOGGER.warn("State is null!")
+            LOGGER.warn("handleDayChosen: State is null!")
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
@@ -192,7 +193,7 @@ class RoundBot {
         var state = stateService.getUserState(user)
 
         if (state == null) {
-            LOGGER.warn("State is null!")
+            LOGGER.warn("handleTimeChosen: State is null!")
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
@@ -260,7 +261,7 @@ class RoundBot {
 
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
         val user = userService.getOrCreate(callbackQuery.from)
-        val state = stateService.getUserState(user)
+        var state = stateService.getUserState(user)
         val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
@@ -283,6 +284,7 @@ class RoundBot {
         )
         try {
             appointmentService.insert(appointment)
+            stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
                 text = stringResources.getConfirmedMessage(
@@ -294,14 +296,22 @@ class RoundBot {
                 ),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
+        } catch (e: AlreadyExistException) {
+            LOGGER.warn("Time is already taken!")
+            bot.sendMessage(
+                chatId = chatId,
+                text = stringResources.getTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime))
+            )
+            state = stateService.applyBack(state, Back.BACK_TO_CHOOSE_TIME)
+            handleDayChosen(bot, callbackQuery, state.day!!)
         } catch (e: Exception) {
+            LOGGER.error("Error!", e)
+            stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
-        } finally {
-            stateService.clearState(user)
         }
     }
 

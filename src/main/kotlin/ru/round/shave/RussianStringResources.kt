@@ -59,6 +59,10 @@ object RussianStringResources : StringResources {
         return "Записаться"
     }
 
+    override fun getTimeIsAlreadyTakenMessage(time: String): String {
+        return "К сожалению, выбранное время ($time) уже занято. Выберите другое время."
+    }
+
     override fun getConfirmedMessage(
         serviceName: String,
         day: String,

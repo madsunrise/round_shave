@@ -21,6 +21,8 @@ interface StringResources {
 
     fun getConfirmButtonText(): String
 
+    fun getTimeIsAlreadyTakenMessage(time: String): String
+
     fun getConfirmedMessage(
         serviceName: String,
         day: String,

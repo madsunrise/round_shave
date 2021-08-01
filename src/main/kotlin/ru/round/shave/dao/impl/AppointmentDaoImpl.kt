@@ -1,8 +1,10 @@
 package ru.round.shave.dao.impl
 
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Repository
 import ru.round.shave.dao.AppointmentDao
 import ru.round.shave.entity.Appointment
+import ru.round.shave.exception.AlreadyExistException
 import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.EntityManager
@@ -16,6 +18,10 @@ class AppointmentDaoImpl : AppointmentDao {
     private lateinit var em: EntityManager
 
     override fun insert(entity: Appointment) {
+        if (!checkIsTimeFree(entity.startTime, entity.endTime)) {
+            LOGGER.warn("Can't insert appointment: time is taken! $entity")
+            throw AlreadyExistException("Time is already taken!")
+        }
         em.persist(entity)
         em.flush()
     }
@@ -57,5 +63,35 @@ class AppointmentDaoImpl : AppointmentDao {
         }
 
         return em.createQuery(afterOrderBy).resultList
+    }
+
+    private fun checkIsTimeFree(start: LocalDateTime, end: LocalDateTime): Boolean {
+        val cb = em.criteriaBuilder
+        val query = cb.createQuery(Appointment::class.java)
+        val root = query.from(Appointment::class.java)
+
+        val predicates = mutableListOf<Predicate>()
+        predicates.add(
+            cb.or(
+                cb.and(
+                    cb.greaterThanOrEqualTo(root.get("startTime"), start),
+                    cb.lessThan(root.get("startTime"), end)
+                ),
+                cb.and(
+                    cb.greaterThan(root.get("endTime"), start),
+                    cb.lessThanOrEqualTo(root.get("endTime"), end)
+                )
+            )
+        )
+
+        query
+            .select(root)
+            .where(*predicates.toTypedArray())
+
+        return em.createQuery(query).resultList.isEmpty()
+    }
+
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(AppointmentDaoImpl::class.java.simpleName)
     }
 }
