@@ -28,9 +28,10 @@ object RussianStringResources : StringResources {
         return "К сожалению, запись на $date недоступна. Выберите другую дату."
     }
 
-    override fun getChooseDayMessage(serviceName: String): String {
+    override fun getChooseDayMessage(serviceName: String, durationInMinutes: Int): String {
         return listOf(
             "Выбранная услуга: $serviceName",
+            "Длительность: $durationInMinutes мин.",
             "",
             "Выберите день посещения.",
         ).joinToString(separator = "\n")

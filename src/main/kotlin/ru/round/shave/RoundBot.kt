@@ -122,7 +122,7 @@ class RoundBot {
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
             bot.sendMessage(
                 chatId = chatId,
-                text = stringResources.getChooseDayMessage(service.getDisplayName()),
+                text = stringResources.getChooseDayMessage(service.getDisplayName(), service.duration),
                 replyMarkup = InlineKeyboardMarkup.create(withBackButton)
             )
         }

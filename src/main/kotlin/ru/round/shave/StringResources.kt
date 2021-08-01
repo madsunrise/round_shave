@@ -13,7 +13,7 @@ interface StringResources {
 
     fun getChosenDayIsUnavailableMessage(date: String): String
 
-    fun getChooseDayMessage(serviceName: String): String
+    fun getChooseDayMessage(serviceName: String, durationInMinutes: Int): String
 
     fun getChooseTimeMessage(serviceName: String, day: String): String
 
