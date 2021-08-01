@@ -141,8 +141,9 @@ class RoundBot {
             LOGGER.warn("State is null!")
             stateService.clearState(user)
             bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
+                chatId = chatId,
+                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
         }
@@ -195,8 +196,9 @@ class RoundBot {
             LOGGER.warn("State is null!")
             stateService.clearState(user)
             bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
+                chatId = chatId,
+                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
         }
@@ -207,8 +209,9 @@ class RoundBot {
             LOGGER.warn("State is not filled!")
             stateService.clearState(user)
             bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
+                chatId = chatId,
+                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
         }
@@ -219,7 +222,7 @@ class RoundBot {
         bot.sendMessage(
             chatId = chatId,
             text = listOf(
-                state.service!!.getDisplayName(),
+                "Услуга: ${state.service!!.getDisplayName()}",
                 "Дата и время: ${state.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
                     state.time!!.format(VISIBLE_TIME_FORMATTER)
                 }",
@@ -262,11 +265,10 @@ class RoundBot {
         val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
-            val resetButton = createGoToBeginningButton()
             bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи.",
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(resetButton)
+                chatId = chatId,
+                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
         }
@@ -289,13 +291,15 @@ class RoundBot {
                             "${VISIBLE_DATE_FORMATTER_FULL.format(state.day)} в " +
                             "${VISIBLE_TIME_FORMATTER.format(startTime)} по адресу: 2-я Магистральная ул., 3с3.",
                     "",
-                    service.getDisplayName()
+                    "Услуга: ${service.getDisplayName()}",
+                    "Итоговая стоимость: ${service.getDisplayPrice()}"
                 ).joinToString(separator = "\n")
             )
         } catch (e: Exception) {
             bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
+                chatId = chatId,
+                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
         } finally {
             stateService.clearState(user)
@@ -327,11 +331,12 @@ class RoundBot {
                 val service = state.service
                 if (service == null) {
                     LOGGER.warn("Service is null!")
+                    stateService.clearState(user)
                     bot.sendMessage(
-                        chatId,
-                        "К сожалению, произошла ошибка. Повторите процедуру записи."
+                        chatId = chatId,
+                        text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
                     )
-                    resetEverything(bot, callbackQuery)
                 } else {
                     handleServiceChosen(bot, callbackQuery, service)
                 }
@@ -340,11 +345,12 @@ class RoundBot {
                 val day = state.day
                 if (day == null) {
                     LOGGER.warn("Day is null!")
+                    stateService.clearState(user)
                     bot.sendMessage(
-                        chatId,
-                        "К сожалению, произошла ошибка. Повторите процедуру записи."
+                        chatId = chatId,
+                        text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
                     )
-                    resetEverything(bot, callbackQuery)
                 } else {
                     handleDayChosen(bot, callbackQuery, day)
                 }
