@@ -43,4 +43,9 @@ data class Appointment(
         startTime = LocalDateTime.MIN,
         endTime = LocalDateTime.MIN
     )
+
+    override fun toString(): String {
+        return "Appointment(id=$id, userId=${user.id}, services=$services, " +
+                "startTime=$startTime, endTime=$endTime, createdAt=$createdAt)"
+    }
 }
