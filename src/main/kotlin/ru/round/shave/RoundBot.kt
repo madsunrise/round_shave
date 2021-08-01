@@ -46,6 +46,8 @@ class RoundBot {
     @Autowired
     private lateinit var timeManagementService: TimeManagementService
 
+    private val stringResources: StringResources = RussianStringResources
+
     @PostConstruct
     fun run() {
         val bot = bot {
@@ -53,7 +55,7 @@ class RoundBot {
             dispatch {
                 command("start") {
                     val chatId = ChatId.fromId(message.chat.id)
-                    bot.sendMessage(chatId, "Вас приветствует Round Shave Bot!")
+                    bot.sendMessage(chatId, stringResources.getHelloMessage())
                     sendInitialMessage(bot, chatId)
                 }
 
@@ -90,7 +92,7 @@ class RoundBot {
     private fun sendInitialMessage(bot: Bot, chatId: ChatId) {
         bot.sendMessage(
             chatId,
-            "Выберите тип услуги.",
+            stringResources.getChooseServiceTypeMessage(),
             replyMarkup = createChooseServiceKeyboard()
         )
     }
@@ -109,19 +111,17 @@ class RoundBot {
         if (freeDaysButtons.isEmpty()) {
             LOGGER.warn("Free days are not found!")
             bot.sendMessage(
-                chatId,
-                "К сожалению, запись временно недоступна."
+                chatId = chatId,
+                text = stringResources.getAppointmentTemporarilyUnavailableMessage(),
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
         } else {
             val state = stateService.createNewState(user)
             stateService.handleServiceChosen(state, service)
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
             bot.sendMessage(
-                chatId,
-                listOf(
-                    "Выбранная услуга: ${service.getDisplayName()}",
-                    "Выберите день посещения."
-                ).joinToString(separator = "\n"),
+                chatId = chatId,
+                text = stringResources.getChooseDayMessage(service.getDisplayName()),
                 replyMarkup = InlineKeyboardMarkup.create(withBackButton)
             )
         }
@@ -142,7 +142,7 @@ class RoundBot {
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
-                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
@@ -155,7 +155,7 @@ class RoundBot {
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
             bot.sendMessage(
                 chatId,
-                "К сожалению, запись на ${VISIBLE_DATE_FORMATTER_FULL.format(day)} недоступна. Выберите другую дату.",
+                stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
                 replyMarkup = InlineKeyboardMarkup.create(withBackButton)
             )
             return
@@ -172,12 +172,11 @@ class RoundBot {
 
         val withBackButton = list.chunked(4) + listOf(createBackButton(Back.BACK_TO_CHOOSE_DAY))
         bot.sendMessage(
-            chatId,
-            listOf(
-                state.service.getDisplayName(),
-                "Выбранный день: ${VISIBLE_DATE_FORMATTER_FULL.format(day)}",
-                "Выберите время посещения."
-            ).joinToString(separator = "\n"),
+            chatId = chatId,
+            text = stringResources.getChooseTimeMessage(
+                serviceName = state.service.getDisplayName(),
+                VISIBLE_DATE_FORMATTER_FULL.format(day)
+            ),
             replyMarkup = InlineKeyboardMarkup.create(withBackButton)
         )
     }
@@ -197,7 +196,7 @@ class RoundBot {
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
-                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
@@ -210,7 +209,7 @@ class RoundBot {
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
-                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
@@ -221,15 +220,12 @@ class RoundBot {
 
         bot.sendMessage(
             chatId = chatId,
-            text = listOf(
-                "Услуга: ${state.service!!.getDisplayName()}",
-                "Дата и время: ${state.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
-                    state.time!!.format(VISIBLE_TIME_FORMATTER)
-                }",
-                "Стоимость: ${state.service!!.getDisplayPrice()}",
-                "",
-                "Всё верно?",
-            ).joinToString(separator = "\n"),
+            text = stringResources.getMessageForConfirmation(
+                serviceName = state.service!!.getDisplayName(),
+                day = state.day!!.format(VISIBLE_DATE_FORMATTER_FULL),
+                time = state.time!!.format(VISIBLE_TIME_FORMATTER),
+                price = state.service!!.getDisplayPrice()
+            ),
             replyMarkup = InlineKeyboardMarkup.create(withBackButton)
         )
     }
@@ -254,7 +250,10 @@ class RoundBot {
     }
 
     private fun createConfirmKeyboard(): List<List<InlineKeyboardButton.CallbackData>> {
-        val confirmButton = InlineKeyboardButton.CallbackData("Записаться", CALLBACK_DATA_CONFIRM)
+        val confirmButton = InlineKeyboardButton.CallbackData(
+            text = stringResources.getConfirmButtonText(),
+            callbackData = CALLBACK_DATA_CONFIRM
+        )
         val resetButton = createGoToBeginningButton()
         return listOf(listOf(confirmButton, resetButton))
     }
@@ -267,7 +266,7 @@ class RoundBot {
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
-                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             return
@@ -285,20 +284,20 @@ class RoundBot {
         try {
             appointmentService.insert(appointment)
             bot.sendMessage(
-                chatId,
-                listOf(
-                    "Запись подтверждена. Ждём вас " +
-                            "${VISIBLE_DATE_FORMATTER_FULL.format(state.day)} в " +
-                            "${VISIBLE_TIME_FORMATTER.format(startTime)} по адресу: 2-я Магистральная ул., 3с3.",
-                    "",
-                    "Услуга: ${service.getDisplayName()}",
-                    "Итоговая стоимость: ${service.getDisplayPrice()}"
-                ).joinToString(separator = "\n")
+                chatId = chatId,
+                text = stringResources.getConfirmedMessage(
+                    serviceName = service.getDisplayName(),
+                    day = VISIBLE_DATE_FORMATTER_FULL.format(state.day),
+                    time = VISIBLE_TIME_FORMATTER.format(startTime),
+                    totalPrice = service.getDisplayPrice(),
+                    durationInMinutes = service.duration
+                ),
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
         } catch (e: Exception) {
             bot.sendMessage(
                 chatId = chatId,
-                text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
         } finally {
@@ -308,7 +307,7 @@ class RoundBot {
 
     private fun createBackButton(back: Back): List<InlineKeyboardButton.CallbackData> {
         val callback = BackCallbackHandler.convertToCallbackData(back)
-        return listOf(InlineKeyboardButton.CallbackData("Назад", callback))
+        return listOf(InlineKeyboardButton.CallbackData(stringResources.getBackButtonText(), callback))
     }
 
     private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
@@ -334,7 +333,7 @@ class RoundBot {
                     stateService.clearState(user)
                     bot.sendMessage(
                         chatId = chatId,
-                        text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                        text = stringResources.getErrorMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
                     )
                 } else {
@@ -348,7 +347,7 @@ class RoundBot {
                     stateService.clearState(user)
                     bot.sendMessage(
                         chatId = chatId,
-                        text = "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                        text = stringResources.getErrorMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
                     )
                 } else {
@@ -366,7 +365,7 @@ class RoundBot {
     }
 
     private fun createGoToBeginningButton(): InlineKeyboardButton.CallbackData {
-        return InlineKeyboardButton.CallbackData("В начало", CALLBACK_DATA_RESET)
+        return InlineKeyboardButton.CallbackData(stringResources.getGoToBeginningButtonText(), CALLBACK_DATA_RESET)
     }
 
     companion object {
