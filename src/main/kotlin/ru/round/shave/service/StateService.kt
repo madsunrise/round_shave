@@ -1,5 +1,6 @@
 package ru.round.shave.service
 
+import ru.round.shave.entity.Back
 import ru.round.shave.entity.Service
 import ru.round.shave.entity.State
 import ru.round.shave.entity.User
@@ -20,4 +21,6 @@ interface StateService {
     fun handleTimeChosen(state: State, time: LocalTime): State
 
     fun isFilled(state: State): Boolean
+
+    fun applyBack(state: State, back: Back): State
 }

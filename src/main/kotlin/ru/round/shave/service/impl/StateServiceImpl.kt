@@ -3,6 +3,7 @@ package ru.round.shave.service.impl
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
 import ru.round.shave.dao.StateDao
+import ru.round.shave.entity.Back
 import ru.round.shave.entity.Service
 import ru.round.shave.entity.State
 import ru.round.shave.entity.User
@@ -66,6 +67,38 @@ open class StateServiceImpl : StateService {
 
     override fun isFilled(state: State): Boolean {
         return state.service != null && state.day != null && state.time != null
+    }
+
+    override fun applyBack(state: State, back: Back): State {
+        return when (back) {
+            Back.BACK_TO_SERVICES -> {
+                val updated = state.copy(
+                    service = null,
+                    day = null,
+                    time = null,
+                    currentStep = State.Step.INITIAL
+                )
+                stateDao.update(updated)
+                updated
+            }
+            Back.BACK_TO_CHOOSE_DAY -> {
+                val updated = state.copy(
+                    day = null,
+                    time = null,
+                    currentStep = State.Step.SERVICE_CHOSEN
+                )
+                stateDao.update(updated)
+                updated
+            }
+            Back.BACK_TO_CHOOSE_TIME -> {
+                val updated = state.copy(
+                    time = null,
+                    currentStep = State.Step.DAY_CHOSEN
+                )
+                stateDao.update(updated)
+                updated
+            }
+        }
     }
 }
 

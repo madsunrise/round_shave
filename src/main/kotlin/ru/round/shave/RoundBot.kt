@@ -13,12 +13,17 @@ import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import ru.round.shave.callback.BackCallbackHandler
 import ru.round.shave.callback.ChooseDateCallbackHandler
 import ru.round.shave.callback.ChooseServiceCallbackHandler
 import ru.round.shave.callback.ChooseTimeCallbackHandler
 import ru.round.shave.entity.Appointment
+import ru.round.shave.entity.Back
+import ru.round.shave.entity.Service
 import ru.round.shave.service.*
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.annotation.PostConstruct
@@ -53,8 +58,7 @@ class RoundBot {
                 }
 
                 callbackQuery(data = CALLBACK_DATA_RESET) {
-                    val chatId = ChatId.fromId(this.callbackQuery.message!!.chat.id)
-                    sendInitialMessage(bot, chatId)
+                    resetEverything(bot, callbackQuery)
                 }
 
                 callbackQuery(data = CALLBACK_DATA_CONFIRM) {
@@ -73,6 +77,9 @@ class RoundBot {
                         ChooseTimeCallbackHandler.canHandle(callbackData) -> {
                             handleTimeChosen(bot, this.callbackQuery)
                         }
+                        BackCallbackHandler.canHandle(callbackData) -> {
+                            goBack(bot, this.callbackQuery)
+                        }
                     }
                 }
             }
@@ -90,38 +97,49 @@ class RoundBot {
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery) {
         val chosenService = ChooseServiceCallbackHandler(serviceService).convertFromCallbackData(callbackQuery.data)
+        handleServiceChosen(bot, callbackQuery, chosenService)
+    }
+
+    private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery, service: Service) {
         val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         stateService.clearState(user)
 
-        val freeDaysButtons = createChooseDayKeyboard(chosenService.duration)
+        val freeDaysButtons = createChooseDayKeyboard(service.duration)
         if (freeDaysButtons.isEmpty()) {
+            LOGGER.warn("Free days are not found!")
             bot.sendMessage(
                 chatId,
                 "К сожалению, запись временно недоступна."
             )
         } else {
             val state = stateService.createNewState(user)
-            stateService.handleServiceChosen(state, chosenService)
+            stateService.handleServiceChosen(state, service)
+            val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
             bot.sendMessage(
                 chatId,
                 listOf(
-                    "Выбранная услуга: ${chosenService.getDisplayName()}",
+                    "Выбранная услуга: ${service.getDisplayName()}",
                     "Выберите день посещения."
                 ).joinToString(separator = "\n"),
-                replyMarkup = InlineKeyboardMarkup.create(freeDaysButtons.chunked(DAYS_PER_ROW))
+                replyMarkup = InlineKeyboardMarkup.create(withBackButton)
             )
         }
     }
 
     private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery) {
         val chosenDate = ChooseDateCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        handleDayChosen(bot, callbackQuery, chosenDate)
+    }
+
+    private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery, day: LocalDate) {
         val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         val state = stateService.getUserState(user)
 
         if (state == null) {
             LOGGER.warn("State is null!")
+            stateService.clearState(user)
             bot.sendMessage(
                 chatId,
                 "К сожалению, произошла ошибка. Повторите процедуру записи."
@@ -130,18 +148,19 @@ class RoundBot {
         }
 
         val duration = state.service!!.duration
-        val slots = timeManagementService.getFreeWindows(chosenDate, duration)
+        val slots = timeManagementService.getFreeWindows(day, duration)
         if (slots.isEmpty()) {
             val freeDaysButtons = createChooseDayKeyboard(duration)
+            val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
             bot.sendMessage(
                 chatId,
-                "К сожалению, запись на ${VISIBLE_DATE_FORMATTER_FULL.format(chosenDate)} недоступна. Выберите другую дату.",
-                replyMarkup = InlineKeyboardMarkup.create(freeDaysButtons.chunked(DAYS_PER_ROW))
+                "К сожалению, запись на ${VISIBLE_DATE_FORMATTER_FULL.format(day)} недоступна. Выберите другую дату.",
+                replyMarkup = InlineKeyboardMarkup.create(withBackButton)
             )
             return
         }
 
-        stateService.handleDayChosen(state, chosenDate)
+        stateService.handleDayChosen(state, day)
 
         val list = mutableListOf<InlineKeyboardButton.CallbackData>()
         for (slot in slots) {
@@ -150,16 +169,66 @@ class RoundBot {
             list.add(button)
         }
 
+        val withBackButton = list.chunked(4) + listOf(createBackButton(Back.BACK_TO_CHOOSE_DAY))
         bot.sendMessage(
             chatId,
             listOf(
                 state.service.getDisplayName(),
-                "Выбранный день: ${VISIBLE_DATE_FORMATTER_FULL.format(chosenDate)}",
+                "Выбранный день: ${VISIBLE_DATE_FORMATTER_FULL.format(day)}",
                 "Выберите время посещения."
             ).joinToString(separator = "\n"),
-            replyMarkup = InlineKeyboardMarkup.create(list.chunked(4))
+            replyMarkup = InlineKeyboardMarkup.create(withBackButton)
         )
+    }
 
+    private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery) {
+        val chosenTime = ChooseTimeCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        handleTimeChosen(bot, callbackQuery, chosenTime)
+    }
+
+    private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery, time: LocalTime) {
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = userService.getOrCreate(callbackQuery.from)
+        var state = stateService.getUserState(user)
+
+        if (state == null) {
+            LOGGER.warn("State is null!")
+            stateService.clearState(user)
+            bot.sendMessage(
+                chatId,
+                "К сожалению, произошла ошибка. Повторите процедуру записи."
+            )
+            return
+        }
+
+        state = stateService.handleTimeChosen(state, time)
+
+        if (!stateService.isFilled(state)) {
+            LOGGER.warn("State is not filled!")
+            stateService.clearState(user)
+            bot.sendMessage(
+                chatId,
+                "К сожалению, произошла ошибка. Повторите процедуру записи."
+            )
+            return
+        }
+
+        val keyboard = createConfirmKeyboard()
+        val withBackButton = keyboard + listOf(createBackButton(Back.BACK_TO_CHOOSE_TIME))
+
+        bot.sendMessage(
+            chatId = chatId,
+            text = listOf(
+                state.service!!.getDisplayName(),
+                "Дата и время: ${state.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
+                    state.time!!.format(VISIBLE_TIME_FORMATTER)
+                }",
+                "Стоимость: ${state.service!!.getDisplayPrice()}",
+                "",
+                "Всё верно?",
+            ).joinToString(separator = "\n"),
+            replyMarkup = InlineKeyboardMarkup.create(withBackButton)
+        )
     }
 
     private fun createChooseServiceKeyboard(): ReplyMarkup {
@@ -181,53 +250,10 @@ class RoundBot {
         return list
     }
 
-    private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery) {
-        val chosenTime = ChooseTimeCallbackHandler.convertFromCallbackData(callbackQuery.data)
-
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
-        var state = stateService.getUserState(user)
-
-        if (state == null) {
-            LOGGER.warn("State is null!")
-            bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
-            )
-            return
-        }
-
-        state = stateService.handleTimeChosen(state, chosenTime)
-
-        if (!stateService.isFilled(state)) {
-            LOGGER.warn("State is not filled!")
-            stateService.clearState(user)
-            bot.sendMessage(
-                chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
-            )
-            return
-        }
-
-        bot.sendMessage(
-            chatId = chatId,
-            text = listOf(
-                state.service!!.getDisplayName(),
-                "Дата и время: ${state.day!!.format(VISIBLE_DATE_FORMATTER_FULL)} ${
-                    state.time!!.format(VISIBLE_TIME_FORMATTER)
-                }",
-                "Стоимость: ${state.service!!.getDisplayPrice()}",
-                "",
-                "Всё верно?",
-            ).joinToString(separator = "\n"),
-            replyMarkup = createConfirmKeyboard()
-        )
-    }
-
-    private fun createConfirmKeyboard(): ReplyMarkup {
+    private fun createConfirmKeyboard(): List<List<InlineKeyboardButton.CallbackData>> {
         val confirmButton = InlineKeyboardButton.CallbackData("Записаться", CALLBACK_DATA_CONFIRM)
-        val resetButton = InlineKeyboardButton.CallbackData("В начало", CALLBACK_DATA_RESET)
-        return InlineKeyboardMarkup.createSingleRowKeyboard(confirmButton, resetButton)
+        val resetButton = createGoToBeginningButton()
+        return listOf(listOf(confirmButton, resetButton))
     }
 
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
@@ -236,9 +262,11 @@ class RoundBot {
         val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
+            val resetButton = createGoToBeginningButton()
             bot.sendMessage(
                 chatId,
-                "К сожалению, произошла ошибка. Повторите процедуру записи."
+                "К сожалению, произошла ошибка. Повторите процедуру записи.",
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(resetButton)
             )
             return
         }
@@ -272,6 +300,67 @@ class RoundBot {
         } finally {
             stateService.clearState(user)
         }
+    }
+
+    private fun createBackButton(back: Back): List<InlineKeyboardButton.CallbackData> {
+        val callback = BackCallbackHandler.convertToCallbackData(back)
+        return listOf(InlineKeyboardButton.CallbackData("Назад", callback))
+    }
+
+    private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
+        val back = BackCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = userService.getOrCreate(callbackQuery.from)
+        LOGGER.info("Go back: $back from user ${user.id}")
+        var state = stateService.getUserState(user)
+        if (state == null) {
+            LOGGER.warn("Failed to apply back :$back: state is null")
+            resetEverything(bot, callbackQuery)
+            return
+        }
+        state = stateService.applyBack(state, back)
+        val res: Any = when (back) {
+            Back.BACK_TO_SERVICES -> {
+                resetEverything(bot, callbackQuery)
+            }
+            Back.BACK_TO_CHOOSE_DAY -> {
+                val service = state.service
+                if (service == null) {
+                    LOGGER.warn("Service is null!")
+                    bot.sendMessage(
+                        chatId,
+                        "К сожалению, произошла ошибка. Повторите процедуру записи."
+                    )
+                    resetEverything(bot, callbackQuery)
+                } else {
+                    handleServiceChosen(bot, callbackQuery, service)
+                }
+            }
+            Back.BACK_TO_CHOOSE_TIME -> {
+                val day = state.day
+                if (day == null) {
+                    LOGGER.warn("Day is null!")
+                    bot.sendMessage(
+                        chatId,
+                        "К сожалению, произошла ошибка. Повторите процедуру записи."
+                    )
+                    resetEverything(bot, callbackQuery)
+                } else {
+                    handleDayChosen(bot, callbackQuery, day)
+                }
+            }
+        }
+    }
+
+    private fun resetEverything(bot: Bot, callbackQuery: CallbackQuery) {
+        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = userService.getOrCreate(callbackQuery.from)
+        stateService.clearState(user)
+        sendInitialMessage(bot, chatId)
+    }
+
+    private fun createGoToBeginningButton(): InlineKeyboardButton.CallbackData {
+        return InlineKeyboardButton.CallbackData("В начало", CALLBACK_DATA_RESET)
     }
 
     companion object {
