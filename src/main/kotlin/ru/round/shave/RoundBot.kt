@@ -10,6 +10,7 @@ import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.ReplyMarkup
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import com.github.kotlintelegrambot.logging.LogLevel
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -52,6 +53,7 @@ class RoundBot {
     @PostConstruct
     fun run() {
         val bot = bot {
+            logLevel = LogLevel.All()
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
                 command("start") {
