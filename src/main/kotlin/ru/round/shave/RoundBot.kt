@@ -74,6 +74,7 @@ class RoundBot {
                 })
 
                 contact { bot, update, contact ->
+                    LOGGER.info("Handle contact callback: $contact")
                     handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
                 }
 
@@ -302,6 +303,7 @@ class RoundBot {
         )
         try {
             appointmentService.insert(appointment)
+            LOGGER.info("New appointment: $appointment")
             stateService.clearState(user)
             bot.sendMessage(
                 chatId = chatId,
@@ -315,6 +317,7 @@ class RoundBot {
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
             if (user.phone.isNullOrBlank()) {
+                LOGGER.info("Requesting phone number")
                 requestPhoneNumber(bot, chatId)
             }
         } catch (e: AlreadyExistException) {
@@ -355,6 +358,7 @@ class RoundBot {
         val userInDb = userService.getOrCreate(user, chatId)
         val withPhone = userInDb.copy(phone = contact.phoneNumber)
         userService.update(withPhone)
+        LOGGER.info("Added phone number for user with ID ${withPhone.id}")
         bot.sendMessage(
             chatId = chatId,
             text = stringResources.getRequestPhoneSuccessMessage(),
