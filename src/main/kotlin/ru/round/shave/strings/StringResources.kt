@@ -1,5 +1,7 @@
 package ru.round.shave.strings
 
+import ru.round.shave.entity.User
+
 interface StringResources {
     fun getHelloMessage(): String
 
@@ -46,4 +48,15 @@ interface StringResources {
     fun getBackButtonText(): String
 
     fun getGoToBeginningButtonText(): String
+
+    fun getNewAppointmentAdminMessage(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        durationInMinutes: Int,
+        user: User
+    ): String
+
+    fun getPhoneSharedAdminMessage(user: User): String
 }

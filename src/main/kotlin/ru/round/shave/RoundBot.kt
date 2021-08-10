@@ -305,16 +305,32 @@ class RoundBot {
             appointmentService.insert(appointment)
             LOGGER.info("New appointment: $appointment")
             stateService.clearState(user)
+
+            val serviceName = service.getDisplayName()
+            val day = VISIBLE_DATE_FORMATTER_FULL.format(state.day)
+            val time = VISIBLE_TIME_FORMATTER.format(startTime)
+            val totalPrice = service.getDisplayPrice()
+            val durationInMinutes = service.duration
+
             bot.sendMessage(
                 chatId = chatId,
                 text = stringResources.getConfirmedMessage(
-                    serviceName = service.getDisplayName(),
-                    day = VISIBLE_DATE_FORMATTER_FULL.format(state.day),
-                    time = VISIBLE_TIME_FORMATTER.format(startTime),
-                    totalPrice = service.getDisplayPrice(),
-                    durationInMinutes = service.duration
+                    serviceName = serviceName,
+                    day = day,
+                    time = time,
+                    totalPrice = totalPrice,
+                    durationInMinutes = durationInMinutes
                 ),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+            )
+            sendAppointmentAdminNotification(
+                bot = bot,
+                serviceName = serviceName,
+                day = day,
+                time = time,
+                totalPrice = totalPrice,
+                durationInMinutes = durationInMinutes,
+                user = user
             )
             if (user.phone.isNullOrBlank()) {
                 LOGGER.info("Requesting phone number")
@@ -364,6 +380,7 @@ class RoundBot {
             text = stringResources.getRequestPhoneSuccessMessage(),
             replyMarkup = ReplyKeyboardRemove()
         )
+        sendPhoneSharedAdminNotification(bot, withPhone)
     }
 
     private fun createBackButton(back: Back): List<InlineKeyboardButton> {
@@ -434,6 +451,54 @@ class RoundBot {
         )
     }
 
+    private fun sendAppointmentAdminNotification(
+        bot: Bot,
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        durationInMinutes: Int,
+        user: ru.round.shave.entity.User
+    ) {
+        val admins = ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+        if (admins.isEmpty()) {
+            LOGGER.warn("No admins found!")
+            return
+        }
+        val text = stringResources.getNewAppointmentAdminMessage(
+            serviceName = serviceName,
+            day = day,
+            time = time,
+            totalPrice = totalPrice,
+            durationInMinutes = durationInMinutes,
+            user = user
+        )
+        for (admin in admins) {
+            bot.sendMessage(
+                chatId = admin.chatId,
+                text = text
+            )
+        }
+    }
+
+    private fun sendPhoneSharedAdminNotification(
+        bot: Bot,
+        user: ru.round.shave.entity.User
+    ) {
+        val admins = ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+        if (admins.isEmpty()) {
+            LOGGER.warn("No admins found!")
+            return
+        }
+        val text = stringResources.getPhoneSharedAdminMessage(user = user)
+        for (admin in admins) {
+            bot.sendMessage(
+                chatId = admin.chatId,
+                text = text
+            )
+        }
+    }
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
         private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
@@ -447,5 +512,7 @@ class RoundBot {
         private const val CALLBACK_DATA_CONFIRM = "confirm"
 
         private const val DAYS_PER_ROW = 4
+
+        private val ADMIN_USER_IDS = arrayOf(225893185L)
     }
 }

@@ -1,5 +1,7 @@
 package ru.round.shave.strings
 
+import ru.round.shave.entity.User
+
 object RussianStringResources : StringResources {
 
     private val address: String = "2-я Магистральная ул., 3с3."
@@ -106,5 +108,57 @@ object RussianStringResources : StringResources {
 
     override fun getGoToBeginningButtonText(): String {
         return "В начало"
+    }
+
+    override fun getNewAppointmentAdminMessage(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        durationInMinutes: Int,
+        user: User
+    ): String {
+        val list = mutableListOf(
+            "Новая запись!",
+            "--",
+            "Услуга: $serviceName",
+            "Длительность: $durationInMinutes мин.",
+            "Стоимость: $totalPrice",
+            "Дата и время: $day $time",
+            "--",
+        )
+        list.addAll(constructUserInfoForAdmins(user))
+        return list.joinToString(separator = "\n")
+    }
+
+    override fun getPhoneSharedAdminMessage(user: User): String {
+        val list = mutableListOf(
+            "Клиент поделился контактами.",
+            "--"
+        )
+        list.addAll(constructUserInfoForAdmins(user))
+        return list.joinToString(separator = "\n")
+    }
+
+    private fun constructUserInfoForAdmins(user: User): List<String> {
+        val firstLine = StringBuilder(user.firstName)
+        if (!user.lastName.isNullOrBlank()) {
+            firstLine.append(' ')
+            firstLine.append(user.lastName)
+        }
+        if (!user.username.isNullOrBlank()) {
+            firstLine.append(" (@")
+            firstLine.append(user.username)
+            firstLine.append(')')
+        }
+
+        val result = mutableListOf<String>()
+        result.add(firstLine.toString())
+
+        if (!user.phone.isNullOrBlank()) {
+            result.add("Телефон: +${user.phone}")
+        }
+
+        return result
     }
 }
