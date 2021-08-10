@@ -29,6 +29,12 @@ interface StringResources {
 
     fun getTimeIsAlreadyTakenMessage(time: String): String
 
+    fun getRequestPhoneNumberMessage(): String
+
+    fun getRequestPhoneNumberButtonText(): String
+
+    fun getRequestPhoneSuccessMessage(): String
+
     fun getConfirmedMessage(
         serviceName: String,
         day: String,

@@ -71,6 +71,18 @@ object RussianStringResources : StringResources {
         return "К сожалению, выбранное время ($time) уже занято. Выберите другое время."
     }
 
+    override fun getRequestPhoneNumberMessage(): String {
+        return "Пожалуйста, предоставьте свои контактные данные. Это может потребоваться для того, чтобы связаться с вами."
+    }
+
+    override fun getRequestPhoneNumberButtonText(): String {
+        return "Поделиться"
+    }
+
+    override fun getRequestPhoneSuccessMessage(): String {
+        return "Спасибо!"
+    }
+
     override fun getConfirmedMessage(
         serviceName: String,
         day: String,

@@ -3,6 +3,7 @@ package ru.round.shave
 import com.github.kotlintelegrambot.*
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
+import com.github.kotlintelegrambot.dispatcher.contact
 import com.github.kotlintelegrambot.entities.*
 import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
@@ -69,6 +70,10 @@ class RoundBot {
                         handleConfirm(bot, p2.callbackQuery!!)
                     }
                 })
+
+                contact { bot, update, contact ->
+                    handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
+                }
 
                 callbackQuery(body = object : HandleUpdate {
                     override fun invoke(bot: Bot, p2: Update) {
@@ -307,6 +312,9 @@ class RoundBot {
                 ),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
+            if (user.phone.isNullOrBlank()) {
+                requestPhoneNumber(bot, chatId)
+            }
         } catch (e: AlreadyExistException) {
             LOGGER.warn("Time is already taken!")
             bot.sendMessage(
@@ -324,6 +332,32 @@ class RoundBot {
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
             )
         }
+    }
+
+    private fun requestPhoneNumber(bot: Bot, chatId: Long) {
+        bot.sendMessage(
+            chatId = chatId,
+            text = stringResources.getRequestPhoneNumberMessage(),
+            replyMarkup = KeyboardReplyMarkup(
+                keyboard = arrayOf(
+                    KeyboardButton(
+                        text = stringResources.getRequestPhoneNumberButtonText(),
+                        requestContact = true
+                    )
+                )
+            )
+        )
+    }
+
+    private fun handlePhoneShared(bot: Bot, user: User, chatId: Long, contact: Contact) {
+        val userInDb = userService.getOrCreate(user)
+        val withPhone = userInDb.copy(phone = contact.phoneNumber)
+        userService.update(withPhone)
+        bot.sendMessage(
+            chatId = chatId,
+            text = stringResources.getRequestPhoneSuccessMessage(),
+            replyMarkup = ReplyKeyboardRemove()
+        )
     }
 
     private fun createBackButton(back: Back): List<InlineKeyboardButton> {
