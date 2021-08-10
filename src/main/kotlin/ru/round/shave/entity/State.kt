@@ -28,19 +28,8 @@ data class State(
     val day: LocalDate? = null,
 
     @Column(name = "time", nullable = true)
-    val time: LocalTime? = null,
-
-    @Column(name = "step", nullable = false)
-    val currentStep: Step
+    val time: LocalTime? = null
 ) {
 
-    constructor() : this(user = User(), currentStep = Step.INITIAL)
-
-    enum class Step {
-        INITIAL,
-        SERVICE_CHOSEN,
-        DAY_CHOSEN,
-        TIME_CHOSEN,
-        CONFIRMED
-    }
+    constructor() : this(user = User())
 }

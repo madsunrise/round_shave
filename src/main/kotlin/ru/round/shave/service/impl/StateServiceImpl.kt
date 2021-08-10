@@ -22,7 +22,7 @@ open class StateServiceImpl : StateService {
         if (getUserState(user) != null) {
             throw IllegalStateException("User has already state, you must clear it before")
         }
-        val state = State(user = user, currentStep = State.Step.INITIAL)
+        val state = State(user = user)
         stateDao.insert(state)
         return state
     }
@@ -39,8 +39,7 @@ open class StateServiceImpl : StateService {
         val updated = state.copy(
             service = service,
             day = null,
-            time = null,
-            currentStep = State.Step.SERVICE_CHOSEN
+            time = null
         )
         stateDao.update(updated)
         return updated
@@ -49,18 +48,14 @@ open class StateServiceImpl : StateService {
     override fun handleDayChosen(state: State, day: LocalDate): State {
         val updated = state.copy(
             day = day,
-            time = null,
-            currentStep = State.Step.DAY_CHOSEN
+            time = null
         )
         stateDao.update(updated)
         return updated
     }
 
     override fun handleTimeChosen(state: State, time: LocalTime): State {
-        val updated = state.copy(
-            time = time,
-            currentStep = State.Step.TIME_CHOSEN
-        )
+        val updated = state.copy(time = time)
         stateDao.update(updated)
         return updated
     }
@@ -75,8 +70,7 @@ open class StateServiceImpl : StateService {
                 val updated = state.copy(
                     service = null,
                     day = null,
-                    time = null,
-                    currentStep = State.Step.INITIAL
+                    time = null
                 )
                 stateDao.update(updated)
                 updated
@@ -84,17 +78,13 @@ open class StateServiceImpl : StateService {
             Back.BACK_TO_CHOOSE_DAY -> {
                 val updated = state.copy(
                     day = null,
-                    time = null,
-                    currentStep = State.Step.SERVICE_CHOSEN
+                    time = null
                 )
                 stateDao.update(updated)
                 updated
             }
             Back.BACK_TO_CHOOSE_TIME -> {
-                val updated = state.copy(
-                    time = null,
-                    currentStep = State.Step.DAY_CHOSEN
-                )
+                val updated = state.copy(time = null)
                 stateDao.update(updated)
                 updated
             }
