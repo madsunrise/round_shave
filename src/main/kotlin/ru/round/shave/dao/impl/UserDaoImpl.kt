@@ -31,12 +31,12 @@ class UserDaoImpl : UserDao {
         return em.find(User::class.java, id)
     }
 
-    override fun getOrCreate(tgUser: com.github.kotlintelegrambot.entities.User): User {
+    override fun getOrCreate(tgUser: com.github.kotlintelegrambot.entities.User, chatId: Long): User {
         val existing = getById(tgUser.id)
         if (existing != null) {
             return existing
         }
-        val newUser = fromFromTg(tgUser)
+        val newUser = fromFromTg(tgUser, chatId)
         insert(newUser)
         return newUser
     }
@@ -53,9 +53,10 @@ class UserDaoImpl : UserDao {
         return em.createQuery(query).resultList
     }
 
-    fun fromFromTg(user: com.github.kotlintelegrambot.entities.User): User {
+    private fun fromFromTg(user: com.github.kotlintelegrambot.entities.User, chatId: Long): User {
         return User(
             id = user.id,
+            chatId = chatId,
             isBot = user.isBot,
             firstName = user.firstName,
             lastName = user.lastName,

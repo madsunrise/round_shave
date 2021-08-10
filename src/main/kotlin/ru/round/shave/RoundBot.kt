@@ -116,7 +116,7 @@ class RoundBot {
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery, service: Service) {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
 
         val freeDaysButtons = createChooseDayKeyboard(service.duration)
@@ -146,7 +146,7 @@ class RoundBot {
 
     private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery, day: LocalDate) {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
         val state = stateService.getUserState(user)
 
         if (state == null) {
@@ -203,7 +203,7 @@ class RoundBot {
 
     private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery, time: LocalTime) {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
         var state = stateService.getUserState(user)
 
         if (state == null) {
@@ -278,9 +278,9 @@ class RoundBot {
     }
 
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
-        val user = userService.getOrCreate(callbackQuery.from)
-        var state = stateService.getUserState(user)
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
+        var state = stateService.getUserState(user)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
             bot.sendMessage(
@@ -352,7 +352,7 @@ class RoundBot {
     }
 
     private fun handlePhoneShared(bot: Bot, user: User, chatId: Long, contact: Contact) {
-        val userInDb = userService.getOrCreate(user)
+        val userInDb = userService.getOrCreate(user, chatId)
         val withPhone = userInDb.copy(phone = contact.phoneNumber)
         userService.update(withPhone)
         bot.sendMessage(
@@ -371,7 +371,7 @@ class RoundBot {
     private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
         val back = BackCallbackHandler.convertFromCallbackData(callbackQuery.data)
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
         LOGGER.info("Go back: $back from user ${user.id}")
         var state = stateService.getUserState(user)
         if (state == null) {
@@ -417,7 +417,7 @@ class RoundBot {
 
     private fun resetEverything(bot: Bot, callbackQuery: CallbackQuery) {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
-        val user = userService.getOrCreate(callbackQuery.from)
+        val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
         sendInitialMessage(bot, chatId)
     }

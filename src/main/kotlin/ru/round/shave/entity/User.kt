@@ -12,6 +12,9 @@ data class User(
     @Column(name = "id", nullable = false)
     val id: Long = -1,
 
+    @Column(name = "chat_id", nullable = false)
+    val chatId: Long,
+
     @Column(name = "is_bot", nullable = false)
     val isBot: Boolean,
 
@@ -41,6 +44,7 @@ data class User(
 ) {
 
     constructor() : this(
+        chatId = -1L,
         isBot = false,
         firstName = "",
         lastName = null,
@@ -53,7 +57,7 @@ data class User(
     )
 
     override fun toString(): String {
-        return "User(id=$id, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
+        return "User(id=$id, chatId=$chatId, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
                 "username=$username, phone=$phone, languageCode=$languageCode, " +
                 "canJoinGroups=$canJoinGroups, canReadAllGroupMessages=$canReadAllGroupMessages," +
                 " supportsInlineQueries=$supportsInlineQueries)"
