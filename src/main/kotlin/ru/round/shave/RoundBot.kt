@@ -275,7 +275,7 @@ class RoundBot {
             callbackData = CALLBACK_DATA_CONFIRM
         )
         val resetButton = createGoToBeginningButton()
-        return listOf(listOf(confirmButton, resetButton))
+        return listOf(listOf(resetButton, confirmButton))
     }
 
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
