@@ -1,16 +1,10 @@
 package ru.round.shave
 
-import com.github.kotlintelegrambot.Bot
-import com.github.kotlintelegrambot.bot
-import com.github.kotlintelegrambot.dispatch
+import com.github.kotlintelegrambot.*
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
-import com.github.kotlintelegrambot.entities.CallbackQuery
-import com.github.kotlintelegrambot.entities.ChatId
-import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
-import com.github.kotlintelegrambot.entities.ReplyMarkup
-import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
-import com.github.kotlintelegrambot.logging.LogLevel
+import com.github.kotlintelegrambot.entities.*
+import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -53,46 +47,54 @@ class RoundBot {
     @PostConstruct
     fun run() {
         val bot = bot {
-            logLevel = LogLevel.All()
+            logLevel = HttpLoggingInterceptor.Level.BODY
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
-                command("start") {
-                    val chatId = ChatId.fromId(message.chat.id)
-                    bot.sendMessage(chatId, stringResources.getHelloMessage())
-                    sendInitialMessage(bot, chatId)
-                }
+                command("start", body = object : CommandHandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
+                        val chatId = p2.message!!.chat.id//ChatId.fromId(message.chat.id)
+                        bot.sendMessage(chatId, stringResources.getHelloMessage())
+                        sendInitialMessage(bot, chatId)
+                    }
+                })
 
-                callbackQuery(data = CALLBACK_DATA_RESET) {
-                    resetEverything(bot, callbackQuery)
-                }
+                callbackQuery(data = CALLBACK_DATA_RESET, body = object : HandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update) {
+                        resetEverything(bot, p2.callbackQuery!!)
+                    }
+                })
 
-                callbackQuery(data = CALLBACK_DATA_CONFIRM) {
-                    handleConfirm(bot, callbackQuery)
-                }
+                callbackQuery(data = CALLBACK_DATA_CONFIRM, body = object : HandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update) {
+                        handleConfirm(bot, p2.callbackQuery!!)
+                    }
+                })
 
-                callbackQuery {
-                    val callbackData = this.callbackQuery.data
-                    when {
-                        ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
-                            handleServiceChosen(bot, this.callbackQuery)
-                        }
-                        ChooseDateCallbackHandler.canHandle(callbackData) -> {
-                            handleDayChosen(bot, this.callbackQuery)
-                        }
-                        ChooseTimeCallbackHandler.canHandle(callbackData) -> {
-                            handleTimeChosen(bot, this.callbackQuery)
-                        }
-                        BackCallbackHandler.canHandle(callbackData) -> {
-                            goBack(bot, this.callbackQuery)
+                callbackQuery(body = object : HandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update) {
+                        val callbackData = p2.callbackQuery!!.data
+                        when {
+                            ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
+                                handleServiceChosen(bot, p2.callbackQuery!!)
+                            }
+                            ChooseDateCallbackHandler.canHandle(callbackData) -> {
+                                handleDayChosen(bot, p2.callbackQuery!!)
+                            }
+                            ChooseTimeCallbackHandler.canHandle(callbackData) -> {
+                                handleTimeChosen(bot, p2.callbackQuery!!)
+                            }
+                            BackCallbackHandler.canHandle(callbackData) -> {
+                                goBack(bot, p2.callbackQuery!!)
+                            }
                         }
                     }
-                }
+                })
             }
         }
         bot.startPolling()
     }
 
-    private fun sendInitialMessage(bot: Bot, chatId: ChatId) {
+    private fun sendInitialMessage(bot: Bot, chatId: Long) {
         bot.sendMessage(
             chatId,
             stringResources.getChooseServiceTypeMessage(),
@@ -106,7 +108,7 @@ class RoundBot {
     }
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery, service: Service) {
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         stateService.clearState(user)
 
@@ -125,7 +127,7 @@ class RoundBot {
             bot.sendMessage(
                 chatId = chatId,
                 text = stringResources.getChooseDayMessage(service.getDisplayName(), service.duration),
-                replyMarkup = InlineKeyboardMarkup.create(withBackButton)
+                replyMarkup = InlineKeyboardMarkup(withBackButton)
             )
         }
     }
@@ -136,7 +138,7 @@ class RoundBot {
     }
 
     private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery, day: LocalDate) {
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         val state = stateService.getUserState(user)
 
@@ -159,17 +161,20 @@ class RoundBot {
             bot.sendMessage(
                 chatId,
                 stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
-                replyMarkup = InlineKeyboardMarkup.create(withBackButton)
+                replyMarkup = InlineKeyboardMarkup(withBackButton)
             )
             return
         }
 
         stateService.handleDayChosen(state, day)
 
-        val list = mutableListOf<InlineKeyboardButton.CallbackData>()
+        val list = mutableListOf<InlineKeyboardButton>()
         for (slot in slots) {
             val callbackData = ChooseTimeCallbackHandler.convertToCallbackData(slot)
-            val button = InlineKeyboardButton.CallbackData(VISIBLE_TIME_FORMATTER.format(slot), callbackData)
+            val button = InlineKeyboardButton(
+                text = VISIBLE_TIME_FORMATTER.format(slot),
+                callbackData = callbackData
+            )
             list.add(button)
         }
 
@@ -180,7 +185,7 @@ class RoundBot {
                 serviceName = state.service.getDisplayName(),
                 VISIBLE_DATE_FORMATTER_FULL.format(day)
             ),
-            replyMarkup = InlineKeyboardMarkup.create(withBackButton)
+            replyMarkup = InlineKeyboardMarkup(withBackButton)
         )
     }
 
@@ -190,7 +195,7 @@ class RoundBot {
     }
 
     private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery, time: LocalTime) {
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         var state = stateService.getUserState(user)
 
@@ -229,31 +234,34 @@ class RoundBot {
                 time = state.time!!.format(VISIBLE_TIME_FORMATTER),
                 price = state.service!!.getDisplayPrice()
             ),
-            replyMarkup = InlineKeyboardMarkup.create(withBackButton)
+            replyMarkup = InlineKeyboardMarkup(withBackButton)//InlineKeyboardMarkup.create(withBackButton)
         )
     }
 
     private fun createChooseServiceKeyboard(): ReplyMarkup {
         val buttons = serviceService.getAll().map {
             val callbackData = ChooseServiceCallbackHandler(serviceService).convertToCallbackData(it)
-            InlineKeyboardButton.CallbackData(it.getDisplayNameWithPrice(), callbackData)
+            //InlineKeyboardButton.CallbackData(it.getDisplayNameWithPrice(), callbackData)
+            InlineKeyboardButton(text = it.getDisplayNameWithPrice(), callbackData = callbackData)
         }
-        return InlineKeyboardMarkup.create(buttons.chunked(1))
+        //return InlineKeyboardMarkup.create(buttons.chunked(1))
+        return InlineKeyboardMarkup(buttons.chunked(1))
     }
 
-    private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton.CallbackData> {
+    private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton> {
         val daysAvailable = 12
-        val list = mutableListOf<InlineKeyboardButton.CallbackData>()
+        val list = mutableListOf<InlineKeyboardButton>()
         timeManagementService.getDaysThatHaveFreeWindows(daysAvailable, requiredDuration).forEach { current ->
             val callbackData = ChooseDateCallbackHandler.convertToCallbackData(current)
-            val button = InlineKeyboardButton.CallbackData(VISIBLE_DATE_FORMATTER.format(current), callbackData)
+            val button =
+                InlineKeyboardButton(text = VISIBLE_DATE_FORMATTER.format(current), callbackData = callbackData)
             list.add(button)
         }
         return list
     }
 
-    private fun createConfirmKeyboard(): List<List<InlineKeyboardButton.CallbackData>> {
-        val confirmButton = InlineKeyboardButton.CallbackData(
+    private fun createConfirmKeyboard(): List<List<InlineKeyboardButton>> {
+        val confirmButton = InlineKeyboardButton(
             text = stringResources.getConfirmButtonText(),
             callbackData = CALLBACK_DATA_CONFIRM
         )
@@ -264,7 +272,7 @@ class RoundBot {
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
         val user = userService.getOrCreate(callbackQuery.from)
         var state = stateService.getUserState(user)
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
             bot.sendMessage(
@@ -317,14 +325,15 @@ class RoundBot {
         }
     }
 
-    private fun createBackButton(back: Back): List<InlineKeyboardButton.CallbackData> {
+    private fun createBackButton(back: Back): List<InlineKeyboardButton> {
         val callback = BackCallbackHandler.convertToCallbackData(back)
-        return listOf(InlineKeyboardButton.CallbackData(stringResources.getBackButtonText(), callback))
+        //return listOf(InlineKeyboardButton.CallbackData(stringResources.getBackButtonText(), callback))
+        return listOf(InlineKeyboardButton(text = stringResources.getBackButtonText(), callbackData = callback))
     }
 
     private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
         val back = BackCallbackHandler.convertFromCallbackData(callbackQuery.data)
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         LOGGER.info("Go back: $back from user ${user.id}")
         var state = stateService.getUserState(user)
@@ -370,14 +379,18 @@ class RoundBot {
     }
 
     private fun resetEverything(bot: Bot, callbackQuery: CallbackQuery) {
-        val chatId = ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from)
         stateService.clearState(user)
         sendInitialMessage(bot, chatId)
     }
 
-    private fun createGoToBeginningButton(): InlineKeyboardButton.CallbackData {
-        return InlineKeyboardButton.CallbackData(stringResources.getGoToBeginningButtonText(), CALLBACK_DATA_RESET)
+    private fun createGoToBeginningButton(): InlineKeyboardButton {
+        //return InlineKeyboardButton.CallbackData(stringResources.getGoToBeginningButtonText(), CALLBACK_DATA_RESET)
+        return InlineKeyboardButton(
+            text = stringResources.getGoToBeginningButtonText(),
+            callbackData = CALLBACK_DATA_RESET
+        )
     }
 
     companion object {

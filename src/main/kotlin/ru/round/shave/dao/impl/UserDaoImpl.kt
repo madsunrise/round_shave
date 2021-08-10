@@ -61,9 +61,9 @@ class UserDaoImpl : UserDao {
             lastName = user.lastName,
             username = user.username,
             languageCode = user.languageCode,
-            canJoinGroups = user.canJoinGroups,
-            canReadAllGroupMessages = user.canReadAllGroupMessages,
-            supportsInlineQueries = user.supportsInlineQueries,
+            canJoinGroups = false,//user.canJoinGroups,
+            canReadAllGroupMessages = false,//user.canReadAllGroupMessages,
+            supportsInlineQueries = false,//user.supportsInlineQueries,
         )
     }
 }
