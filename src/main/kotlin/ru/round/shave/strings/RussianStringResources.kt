@@ -1,4 +1,4 @@
-package ru.round.shave
+package ru.round.shave.strings
 
 object RussianStringResources : StringResources {
 
