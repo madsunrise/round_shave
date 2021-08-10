@@ -74,7 +74,7 @@ object RussianStringResources : StringResources {
     }
 
     override fun getRequestPhoneNumberMessage(): String {
-        return "Пожалуйста, предоставьте свои контактные данные. Это может потребоваться для того, чтобы связаться с вами."
+        return "Оставьте, пожалуйста, свои контактные данные, чтобы я мог связаться с вами."
     }
 
     override fun getRequestPhoneNumberButtonText(): String {
