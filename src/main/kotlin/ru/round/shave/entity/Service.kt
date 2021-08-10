@@ -36,4 +36,8 @@ data class Service(
     fun getDisplayPrice(): String {
         return "$price\u20BD"
     }
+
+    override fun toString(): String {
+        return "Service(id=$id, name='$name', price=$price, duration=$duration)"
+    }
 }

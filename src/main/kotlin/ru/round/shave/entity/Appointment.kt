@@ -45,7 +45,7 @@ data class Appointment(
     )
 
     override fun toString(): String {
-        return "Appointment(id=$id, userId=${user.id}, services=$services, " +
+        return "Appointment(id=$id, user=$user, services=$services, " +
                 "startTime=$startTime, endTime=$endTime, createdAt=$createdAt)"
     }
 }

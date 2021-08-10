@@ -32,4 +32,8 @@ data class State(
 ) {
 
     constructor() : this(user = User())
+
+    override fun toString(): String {
+        return "State(id=$id, user=$user, service=$service, day=$day, time=$time)"
+    }
 }

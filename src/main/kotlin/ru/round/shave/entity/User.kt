@@ -58,8 +58,6 @@ data class User(
 
     override fun toString(): String {
         return "User(id=$id, chatId=$chatId, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
-                "username=$username, phone=$phone, languageCode=$languageCode, " +
-                "canJoinGroups=$canJoinGroups, canReadAllGroupMessages=$canReadAllGroupMessages," +
-                " supportsInlineQueries=$supportsInlineQueries)"
+                "username=$username, phone=$phone, languageCode=$languageCode)"
     }
 }

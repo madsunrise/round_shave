@@ -26,4 +26,8 @@ data class WorkingHours(
         startTime = LocalTime.MIN,
         endTime = LocalTime.MIN
     )
+
+    override fun toString(): String {
+        return "WorkingHours(id=$id, day=$day, startTime=$startTime, endTime=$endTime)"
+    }
 }
