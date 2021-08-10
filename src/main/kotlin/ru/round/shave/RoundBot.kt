@@ -232,6 +232,7 @@ class RoundBot {
                 serviceName = state.service!!.getDisplayName(),
                 day = state.day!!.format(VISIBLE_DATE_FORMATTER_FULL),
                 time = state.time!!.format(VISIBLE_TIME_FORMATTER),
+                durationInMinutes = state.service!!.duration,
                 price = state.service!!.getDisplayPrice()
             ),
             replyMarkup = InlineKeyboardMarkup(withBackButton)//InlineKeyboardMarkup.create(withBackButton)

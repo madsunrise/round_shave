@@ -46,10 +46,17 @@ object RussianStringResources : StringResources {
         ).joinToString(separator = "\n")
     }
 
-    override fun getMessageForConfirmation(serviceName: String, day: String, time: String, price: String): String {
+    override fun getMessageForConfirmation(
+        serviceName: String,
+        day: String,
+        time: String,
+        durationInMinutes: Int,
+        price: String
+    ): String {
         return listOf(
             "Услуга: $serviceName",
             "Дата и время: $day $time",
+            "Длительность: $durationInMinutes мин.",
             "Стоимость: $price",
             "",
             "Всё верно?",

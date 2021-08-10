@@ -17,7 +17,13 @@ interface StringResources {
 
     fun getChooseTimeMessage(serviceName: String, day: String): String
 
-    fun getMessageForConfirmation(serviceName: String, day: String, time: String, price: String): String
+    fun getMessageForConfirmation(
+        serviceName: String,
+        day: String,
+        time: String,
+        durationInMinutes: Int,
+        price: String
+    ): String
 
     fun getConfirmButtonText(): String
 
