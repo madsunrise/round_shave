@@ -52,7 +52,7 @@ class PopulateWorkingHoursTask {
             )
             workingHoursService.insert(entity)
             count++
-            LOGGER.info("Added working hour: $current")
+            LOGGER.info("Added working hours for day: $current")
             current = current.plusDays(1L)
         }
     }
