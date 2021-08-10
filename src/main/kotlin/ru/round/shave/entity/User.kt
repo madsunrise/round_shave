@@ -24,6 +24,9 @@ data class User(
     @Column(name = "username", nullable = true)
     val username: String?,
 
+    @Column(name = "phone", nullable = true)
+    val phone: String?,
+
     @Column(name = "language_code", nullable = true, length = 10)
     val languageCode: String?,
 
@@ -42,9 +45,17 @@ data class User(
         firstName = "",
         lastName = null,
         username = null,
+        phone = null,
         languageCode = null,
         canJoinGroups = null,
         canReadAllGroupMessages = null,
         supportsInlineQueries = null
     )
+
+    override fun toString(): String {
+        return "User(id=$id, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
+                "username=$username, phone=$phone, languageCode=$languageCode, " +
+                "canJoinGroups=$canJoinGroups, canReadAllGroupMessages=$canReadAllGroupMessages," +
+                " supportsInlineQueries=$supportsInlineQueries)"
+    }
 }

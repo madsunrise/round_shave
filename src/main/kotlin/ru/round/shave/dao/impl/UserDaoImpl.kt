@@ -60,6 +60,7 @@ class UserDaoImpl : UserDao {
             firstName = user.firstName,
             lastName = user.lastName,
             username = user.username,
+            phone = null,
             languageCode = user.languageCode,
             canJoinGroups = false,//user.canJoinGroups,
             canReadAllGroupMessages = false,//user.canReadAllGroupMessages,
