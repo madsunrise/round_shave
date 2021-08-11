@@ -153,7 +153,8 @@ class RoundBot {
             bot = bot,
             tgUser = tgUser,
             chatId = chatId,
-            text = stringResources.getHelloMessage()
+            text = stringResources.getHelloMessage(),
+            clearLastMessageReplyMarkup = true
         )
     }
 
@@ -173,7 +174,8 @@ class RoundBot {
             bot = bot,
             tgUser = tgUser,
             chatId = chatId,
-            text = text
+            text = text,
+            clearLastMessageReplyMarkup = true
         )
     }
 
@@ -187,7 +189,9 @@ class RoundBot {
             tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getChooseServiceTypeMessage(),
-            replyMarkup = createChooseServiceKeyboard()
+            replyMarkup = createChooseServiceKeyboard(),
+            clearLastMessageReplyMarkup = true,
+            keepMessage = false
         )
     }
 
@@ -197,7 +201,8 @@ class RoundBot {
             bot = bot,
             tgUser = tgUser,
             chatId = chatId,
-            text = text
+            text = text,
+            clearLastMessageReplyMarkup = true
         )
     }
 
@@ -207,6 +212,7 @@ class RoundBot {
             tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getChooseAppointmentTypeText(),
+            clearLastMessageReplyMarkup = true,
             replyMarkup = InlineKeyboardMarkup(
                 listOf(
                     listOf(
@@ -258,7 +264,8 @@ class RoundBot {
                 bot = bot,
                 tgUser = tgUser,
                 chatId = chatId,
-                text = stringResources.getNoAppointmentsFoundMessage()
+                text = stringResources.getNoAppointmentsFoundMessage(),
+                clearLastMessageReplyMarkup = false,
             )
             return
         }
@@ -285,6 +292,7 @@ class RoundBot {
                 tgUser = tgUser,
                 chatId = chatId,
                 text = text,
+                clearLastMessageReplyMarkup = false,
                 replyMarkup = if (addCancelButton && !isAdmin(tgUser.id)) {
                     InlineKeyboardMarkup.createSingleButton(createCancelAppointmentButton(appointment))
                 } else {
@@ -323,6 +331,7 @@ class RoundBot {
             tgUser = tgUser,
             chatId = chatId,
             text = text,
+            clearLastMessageReplyMarkup = false,
             replyMarkup = InlineKeyboardMarkup.createSingleButton(createCancelAppointmentConfirmButton(appointment))
         )
     }
@@ -342,7 +351,8 @@ class RoundBot {
             bot = bot,
             tgUser = tgUser,
             chatId = chatId,
-            text = text
+            text = text,
+            clearLastMessageReplyMarkup = true,
         )
         val user = userService.getOrCreate(tgUser, chatId)
         sendAppointmentCancelledAdminNotification(bot, serviceName, day, time, user)
@@ -366,7 +376,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getAppointmentTemporarilyUnavailableMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
         } else {
             val state = stateService.createNewState(user)
@@ -377,7 +389,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getChooseDayMessage(service.getDisplayName(), service.duration),
-                replyMarkup = InlineKeyboardMarkup(withBackButton)
+                replyMarkup = InlineKeyboardMarkup(withBackButton),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
         }
     }
@@ -400,7 +414,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
             return
         }
@@ -415,7 +431,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
-                replyMarkup = InlineKeyboardMarkup(withBackButton)
+                replyMarkup = InlineKeyboardMarkup(withBackButton),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
             return
         }
@@ -446,7 +464,9 @@ class RoundBot {
                 serviceName = state.service.getDisplayName(),
                 VISIBLE_DATE_FORMATTER_FULL.format(day)
             ),
-            replyMarkup = InlineKeyboardMarkup(withBackButton)
+            replyMarkup = InlineKeyboardMarkup(withBackButton),
+            clearLastMessageReplyMarkup = true,
+            keepMessage = false
         )
     }
 
@@ -472,7 +492,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
             return
         }
@@ -487,7 +509,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
             return
         }
@@ -506,7 +530,9 @@ class RoundBot {
                 durationInMinutes = state.service!!.duration,
                 price = state.service!!.getDisplayPrice()
             ),
-            replyMarkup = InlineKeyboardMarkup(withBackButton)//InlineKeyboardMarkup.create(withBackButton)
+            replyMarkup = InlineKeyboardMarkup(withBackButton),//InlineKeyboardMarkup.create(withBackButton)
+            clearLastMessageReplyMarkup = true,
+            keepMessage = false
         )
     }
 
@@ -553,7 +579,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
             return
         }
@@ -567,7 +595,8 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getChosenTimeIsInThePastMessage()
+                text = stringResources.getChosenTimeIsInThePastMessage(),
+                clearLastMessageReplyMarkup = true
             )
             state = stateService.applyBack(state, Back.BACK_TO_CHOOSE_TIME)
             handleDayChosen(bot, callbackQuery, state.day!!)
@@ -603,6 +632,7 @@ class RoundBot {
                     durationInMinutes = durationInMinutes
                 ),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
                 keepMessage = true
             )
             sendNewAppointmentAdminNotification(
@@ -624,7 +654,8 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getChosenTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime))
+                text = stringResources.getChosenTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime)),
+                clearLastMessageReplyMarkup = true
             )
             state = stateService.applyBack(state, Back.BACK_TO_CHOOSE_TIME)
             handleDayChosen(bot, callbackQuery, state.day!!)
@@ -636,7 +667,9 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                clearLastMessageReplyMarkup = true,
+                keepMessage = false
             )
         }
     }
@@ -647,6 +680,7 @@ class RoundBot {
             tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getRequestPhoneNumberMessage(),
+            clearLastMessageReplyMarkup = false,
             replyMarkup = KeyboardReplyMarkup(
                 keyboard = arrayOf(
                     KeyboardButton(
@@ -668,7 +702,9 @@ class RoundBot {
             tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getRequestPhoneSuccessMessage(),
-            replyMarkup = ReplyKeyboardRemove()
+            replyMarkup = ReplyKeyboardRemove(),
+            clearLastMessageReplyMarkup = true,
+            keepMessage = true
         )
         sendPhoneSharedAdminNotification(bot, user)
     }
@@ -705,7 +741,9 @@ class RoundBot {
                         tgUser = callbackQuery.from,
                         chatId = chatId,
                         text = stringResources.getErrorMessage(),
-                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                        clearLastMessageReplyMarkup = true,
+                        keepMessage = false
                     )
                 } else {
                     handleServiceChosen(bot, callbackQuery, service)
@@ -721,7 +759,9 @@ class RoundBot {
                         tgUser = callbackQuery.from,
                         chatId = chatId,
                         text = stringResources.getErrorMessage(),
-                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                        replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                        clearLastMessageReplyMarkup = true,
+                        keepMessage = false
                     )
                 } else {
                     handleDayChosen(bot, callbackQuery, day)
@@ -826,16 +866,19 @@ class RoundBot {
         chatId: Long,
         text: String,
         replyMarkup: ReplyMarkup? = null,
-        keepMessage: Boolean = false // pass true if you want to prevent replacing this message in future
+        clearLastMessageReplyMarkup: Boolean,
+        keepMessage: Boolean // pass true if you want to prevent replacing this message in future
     ) {
         val user = userService.getOrCreate(tgUser, chatId)
-        LOGGER.info("Send replaceable message called! User = ${user.getLogInfo()}, text=$text, keepMessage=$keepMessage")
+        LOGGER.info("Send replaceable message! User = ${user.getLogInfo()}, text=$text, keepMessage=$keepMessage")
+
         if (user.replaceableMessageId == null) {
-            val msgId = sendNewMessageInternal(bot, user, text, replyMarkup)
+            if (clearLastMessageReplyMarkup) {
+                clearLastMessageReplyMarkup(bot, tgUser, chatId)
+            }
+            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
             if (msgId != null && !keepMessage) {
-                LOGGER.info("Updating replaceable message ID for user ${user.getLogInfo()}")
-                val copy = user.copy(replaceableMessageId = msgId)
-                userService.update(copy)
+                updateReplaceableMessageId(tgUser, chatId, msgId)
             }
             return
         }
@@ -848,15 +891,23 @@ class RoundBot {
         )
 
         if (res.first?.isSuccessful != true) {
-            val msgId = sendNewMessageInternal(bot, user, text, replyMarkup)
+            if (clearLastMessageReplyMarkup) {
+                clearLastMessageReplyMarkup(bot, tgUser, chatId)
+            }
+            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
             if (msgId != null && !keepMessage) {
-                userService.update(user.copy(replaceableMessageId = msgId))
+                updateReplaceableMessageId(tgUser, chatId, msgId)
             }
         }
 
         if (keepMessage) {
-            userService.update(user.copy(replaceableMessageId = null))
+            updateReplaceableMessageId(tgUser, chatId, null)
         }
+    }
+
+    private fun updateReplaceableMessageId(tgUser: User, chatId: Long, replaceableMessageId: Long?) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        userService.update(user.copy(replaceableMessageId = replaceableMessageId))
     }
 
     private fun sendPersistentMessage(
@@ -864,26 +915,44 @@ class RoundBot {
         tgUser: User,
         chatId: Long,
         text: String,
+        clearLastMessageReplyMarkup: Boolean,
         replyMarkup: ReplyMarkup? = null
     ) {
-        val user = userService.getOrCreate(tgUser, chatId)
-        sendNewMessageInternal(bot, user, text, replyMarkup)
+        if (clearLastMessageReplyMarkup) {
+            clearLastMessageReplyMarkup(bot, tgUser, chatId)
+        }
+        sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
         // Reset replaceableMessageId to continue conversation below current message
+        val user = userService.getOrCreate(tgUser, chatId)
+        LOGGER.info("Send persistent message! User = ${user.getLogInfo()}, text=$text")
         userService.update(user.copy(replaceableMessageId = null))
     }
 
     private fun sendNewMessageInternal(
         bot: Bot,
-        user: ru.round.shave.entity.User,
+        tgUser: User,
+        chatId: Long,
         text: String,
         replyMarkup: ReplyMarkup? = null
     ): Long? {
         val response = bot.sendMessage(
-            chatId = user.chatId,
+            chatId = chatId,
             text = text,
             replyMarkup = replyMarkup
         )
-        return response.first?.body()?.result?.messageId
+        val messageId = response.first?.body()?.result?.messageId
+        if (messageId != null) {
+            val user = userService.getOrCreate(tgUser, chatId)
+            userService.update(user.copy(lastMessageId = messageId))
+        }
+        return messageId
+    }
+
+    private fun clearLastMessageReplyMarkup(bot: Bot, tgUser: User, chatId: Long) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        if (user.lastMessageId != null) {
+            bot.editMessageReplyMarkup(chatId = chatId, messageId = user.lastMessageId, replyMarkup = null)
+        }
     }
 
     private fun getUserCurrentTime(): LocalDateTime {

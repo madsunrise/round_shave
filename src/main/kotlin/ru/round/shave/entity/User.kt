@@ -33,6 +33,9 @@ data class User(
     @Column(name = "replaceable_message_id", nullable = true)
     val replaceableMessageId: Long?,
 
+    @Column(name = "last_message_id", nullable = true)
+    val lastMessageId: Long?,
+
     @Column(name = "language_code", nullable = true, length = 10)
     val languageCode: String?,
 
@@ -54,6 +57,7 @@ data class User(
         username = null,
         phone = null,
         replaceableMessageId = null,
+        lastMessageId = null,
         languageCode = null,
         canJoinGroups = null,
         canReadAllGroupMessages = null,
@@ -62,7 +66,8 @@ data class User(
 
     override fun toString(): String {
         return "User(id=$id, chatId=$chatId, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
-                "username=$username, phone=$phone, replaceableMessageId=$replaceableMessageId, languageCode=$languageCode)"
+                "username=$username, phone=$phone, replaceableMessageId=$replaceableMessageId," +
+                "lastMessageId=$lastMessageId, languageCode=$languageCode)"
     }
 
     fun getLogInfo(): String {

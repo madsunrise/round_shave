@@ -63,6 +63,7 @@ class UserDaoImpl : UserDao {
             username = user.username,
             phone = null,
             replaceableMessageId = null,
+            lastMessageId = null,
             languageCode = user.languageCode,
             canJoinGroups = false,//user.canJoinGroups,
             canReadAllGroupMessages = false,//user.canReadAllGroupMessages,
