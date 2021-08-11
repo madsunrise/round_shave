@@ -160,7 +160,7 @@ class RoundBot {
     }
 
     private fun getCommandDescriptionWithKey(commandKey: String, description: String): String {
-        return "/${commandKey} ${description.decapitalize()}"
+        return "/${commandKey} ${description.replaceFirstChar { it.lowercaseChar() }}"
     }
 
     private fun suggestServicesForAppointment(bot: Bot, tgUser: User, chatId: Long) {
