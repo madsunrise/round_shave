@@ -643,7 +643,8 @@ class RoundBot {
                         text = stringResources.getRequestPhoneNumberButtonText(),
                         requestContact = true
                     )
-                )
+                ),
+                resizeKeyboard = true
             )
         )
     }
