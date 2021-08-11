@@ -174,7 +174,7 @@ class RoundBot {
     }
 
     private fun sendPriceList(bot: Bot, tgUser: User, chatId: Long) {
-        val text = serviceService.getAll().map { it.getDisplayNameWithPrice() }.joinToString("\n")
+        val text = serviceService.getAll().joinToString("\n") { it.getDisplayNameWithPrice() }
         sendPersistentMessage(
             bot = bot,
             tgUser = tgUser,
