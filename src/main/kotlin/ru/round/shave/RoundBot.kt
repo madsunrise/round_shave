@@ -1,6 +1,8 @@
 package ru.round.shave
 
-import com.github.kotlintelegrambot.*
+import com.github.kotlintelegrambot.Bot
+import com.github.kotlintelegrambot.bot
+import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.contact
@@ -210,7 +212,7 @@ class RoundBot {
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
         val appointments = appointmentService.getAppointmentsInPast(
-            currentTime = getCurrentLocalTime(),
+            currentTime = getUserCurrentTime(),
             user = user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
@@ -221,7 +223,7 @@ class RoundBot {
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
         val appointments = appointmentService.getAppointmentsInFuture(
-            currentTime = getCurrentLocalTime(),
+            currentTime = getUserCurrentTime(),
             user = user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
@@ -313,7 +315,7 @@ class RoundBot {
         }
 
         val duration = state.service!!.duration
-        val slots = timeManagementService.getFreeWindows(day, duration)
+        val slots = timeManagementService.getFreeWindows(day, duration, getUserCurrentTime())
         if (slots.isEmpty()) {
             val freeDaysButtons = createChooseDayKeyboard(duration)
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
@@ -430,12 +432,13 @@ class RoundBot {
     private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton> {
         val daysAvailable = 12
         val list = mutableListOf<InlineKeyboardButton>()
-        timeManagementService.getDaysThatHaveFreeWindows(daysAvailable, requiredDuration).forEach { current ->
-            val callbackData = ChooseDateCallbackHandler.convertToCallbackData(current)
-            val button =
-                InlineKeyboardButton(text = VISIBLE_DATE_FORMATTER.format(current), callbackData = callbackData)
-            list.add(button)
-        }
+        timeManagementService.getDaysThatHaveFreeWindows(daysAvailable, requiredDuration, getUserCurrentTime())
+            .forEach { current ->
+                val callbackData = ChooseDateCallbackHandler.convertToCallbackData(current)
+                val button =
+                    InlineKeyboardButton(text = VISIBLE_DATE_FORMATTER.format(current), callbackData = callbackData)
+                list.add(button)
+            }
         return list
     }
 
@@ -466,6 +469,19 @@ class RoundBot {
         LOGGER.info("Confirmed state for user ${user.id}: $state")
         val service = state.service!!
         val startTime = LocalDateTime.of(state.day, state.time)
+
+        if (startTime < getUserCurrentTime()) {
+            LOGGER.warn("Chosen time is in the past!")
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
+                chatId = chatId,
+                text = stringResources.getChosenTimeIsInThePastMessage()
+            )
+            state = stateService.applyBack(state, Back.BACK_TO_CHOOSE_TIME)
+            handleDayChosen(bot, callbackQuery, state.day!!)
+            return
+        }
 
         val appointment = Appointment(
             user = user,
@@ -517,7 +533,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime))
+                text = stringResources.getChosenTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime))
             )
             state = stateService.applyBack(state, Back.BACK_TO_CHOOSE_TIME)
             handleDayChosen(bot, callbackQuery, state.day!!)
@@ -751,7 +767,7 @@ class RoundBot {
         return response.first?.body()?.result?.messageId
     }
 
-    private fun getCurrentLocalTime(): LocalDateTime {
+    private fun getUserCurrentTime(): LocalDateTime {
         return LocalDateTime.now(TIME_ZONE)
     }
 

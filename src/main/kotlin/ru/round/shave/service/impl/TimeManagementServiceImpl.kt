@@ -8,6 +8,7 @@ import ru.round.shave.service.TimeManagementService
 import ru.round.shave.service.WorkingHoursService
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Service
@@ -19,23 +20,49 @@ class TimeManagementServiceImpl : TimeManagementService {
     @Autowired
     private lateinit var appointmentService: AppointmentService
 
-    override fun getDaysThatHaveFreeWindows(maxCount: Int, requiredDuration: Int): List<LocalDate> {
+    override fun getDaysThatHaveFreeWindows(
+        maxCount: Int,
+        requiredDuration: Int,
+        userCurrentTime: LocalDateTime
+    ): List<LocalDate> {
         val result = mutableListOf<LocalDate>()
         var current = LocalDate.now(RoundBot.TIME_ZONE)
         val maxPossibleDate = current.plusMonths(3L)
         while (result.size < maxCount && current < maxPossibleDate) {
-            if (hasFreeWindow(current, requiredDuration)) {
+
+            val hasFreeWindows = if (current == userCurrentTime.toLocalDate()) {
+                // More complex logic because some windows can be in the past
+                getFreeWindows(current, requiredDuration, userCurrentTime).isNotEmpty()
+            } else {
+                hasFreeWindows(day = current, requiredDuration = requiredDuration)
+            }
+
+            if (hasFreeWindows) {
                 result.add(current)
             }
+
             current = current.plusDays(1L)
         }
         return result
     }
 
-    override fun getFreeWindows(day: LocalDate, requiredDuration: Int): List<LocalTime> {
+    override fun getFreeWindows(
+        day: LocalDate,
+        requiredDuration: Int,
+        userCurrentTime: LocalDateTime
+    ): List<LocalTime> {
         val windowsThatSatisfyUs = getAllFreeWindows(day).filter { it.getDurationInMinutes() >= requiredDuration }
         val sliced = windowsThatSatisfyUs.flatMap { it.sliceByHalfHour(windowMinDuration = requiredDuration) }
-        return sliced.map { it.start }
+        val mapped = sliced.map { it.start }
+        return if (day == userCurrentTime.toLocalDate()) {
+            mapped.filter { it > userCurrentTime.toLocalTime() }
+        } else {
+            mapped
+        }
+    }
+
+    private fun hasFreeWindows(day: LocalDate, requiredDuration: Int): Boolean {
+        return getAllFreeWindows(day).any { it.getDurationInMinutes() >= requiredDuration }
     }
 
     private fun getAllFreeWindows(day: LocalDate): List<Window> {
@@ -58,10 +85,6 @@ class TimeManagementServiceImpl : TimeManagementService {
         }
 
         return allFreeWindows
-    }
-
-    private fun hasFreeWindow(day: LocalDate, requiredDuration: Int): Boolean {
-        return getAllFreeWindows(day).any { it.getDurationInMinutes() >= requiredDuration }
     }
 
     private data class Window(val start: LocalTime, val end: LocalTime) {

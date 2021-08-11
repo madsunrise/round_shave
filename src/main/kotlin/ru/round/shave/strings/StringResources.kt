@@ -30,7 +30,9 @@ interface StringResources {
 
     fun getConfirmButtonText(): String
 
-    fun getTimeIsAlreadyTakenMessage(time: String): String
+    fun getChosenTimeIsAlreadyTakenMessage(time: String): String
+
+    fun getChosenTimeIsInThePastMessage(): String
 
     fun getRequestPhoneNumberMessage(): String
 

@@ -70,8 +70,12 @@ object RussianStringResources : StringResources {
         return "Записаться"
     }
 
-    override fun getTimeIsAlreadyTakenMessage(time: String): String {
+    override fun getChosenTimeIsAlreadyTakenMessage(time: String): String {
         return "К сожалению, выбранное время ($time) уже занято. Выберите другое время."
+    }
+
+    override fun getChosenTimeIsInThePastMessage(): String {
+        return "Запись невозможна, так как выбрано время в прошлом."
     }
 
     override fun getRequestPhoneNumberMessage(): String {
