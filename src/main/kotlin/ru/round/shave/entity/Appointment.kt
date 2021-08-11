@@ -8,7 +8,12 @@ import java.time.ZonedDateTime
 import javax.persistence.*
 
 @Entity
-@Table(name = "appointment")
+@Table(
+    name = "appointment", indexes = [
+        Index(name = "start_time_index", columnList = "start_time", unique = false),
+        Index(name = "end_time_index", columnList = "end_time", unique = false)
+    ]
+)
 data class Appointment(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
