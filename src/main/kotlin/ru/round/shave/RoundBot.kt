@@ -339,13 +339,14 @@ class RoundBot {
                     totalPrice = service.getDisplayPrice()
                 )
             }
+            val showCancelButton = addCancelButton && (!isAdmin(tgUser.id) || tgUser.id == appointment.user.id)
             sendPersistentMessage(
                 bot = bot,
                 tgUser = tgUser,
                 chatId = chatId,
                 text = text,
                 clearLastMessageReplyMarkup = false,
-                replyMarkup = if (addCancelButton && !isAdmin(tgUser.id)) {
+                replyMarkup = if (showCancelButton) {
                     InlineKeyboardMarkup.createSingleButton(createCancelAppointmentButton(appointment))
                 } else {
                     null
