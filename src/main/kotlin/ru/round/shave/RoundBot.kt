@@ -25,6 +25,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
 import javax.annotation.PostConstruct
 
 @Component
@@ -254,6 +255,11 @@ class RoundBot {
             list.add(button)
         }
 
+        val buttonsPerRow = 4
+        while (list.size % buttonsPerRow != 0) {
+            list.add(createStubButton())
+        }
+
         val withBackButton = list.chunked(4) + listOf(createBackButton(Back.BACK_TO_CHOOSE_DAY))
         sendReplaceableMessage(
             bot = bot,
@@ -265,6 +271,10 @@ class RoundBot {
             ),
             replyMarkup = InlineKeyboardMarkup(withBackButton)
         )
+    }
+
+    private fun createStubButton(): InlineKeyboardButton {
+        return InlineKeyboardButton(text = " ", callbackData = createIgnoredCallbackData())
     }
 
     private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery) {
@@ -655,6 +665,10 @@ class RoundBot {
             replyMarkup = replyMarkup
         )
         return response.first?.body()?.result?.messageId
+    }
+
+    private fun createIgnoredCallbackData(): String {
+        return UUID.randomUUID().toString()
     }
 
     companion object {
