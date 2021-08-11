@@ -172,7 +172,7 @@ class RoundBot {
                             CancelAppointmentCallbackHandler.canHandle(callbackData) -> {
                                 askAboutAppointmentCancellation(bot, tgUser, chatId, callbackData)
                             }
-                            CancelConfirmedAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
+                            CancelConfirmedAppointmentCallbackHandler.canHandle(callbackData) -> {
                                 cancelAppointment(bot, tgUser, chatId, callbackData)
                             }
                         }
@@ -364,7 +364,7 @@ class RoundBot {
     }
 
     private fun createCancelAppointmentConfirmButton(appointment: Appointment): InlineKeyboardButton {
-        val data = CancelConfirmedAppointmentCallbackHandler(appointmentService).convertToCallbackData(appointment)
+        val data = CancelConfirmedAppointmentCallbackHandler.convertToCallbackData(appointment.id)
         return InlineKeyboardButton(
             text = stringResources.getCancelAppointmentConfirmButtonText(),
             callbackData = data
@@ -401,8 +401,18 @@ class RoundBot {
     }
 
     private fun cancelAppointment(bot: Bot, tgUser: User, chatId: Long, callbackData: String) {
-        val appointment =
-            CancelConfirmedAppointmentCallbackHandler(appointmentService).convertFromCallbackData(callbackData)
+        val appointmentId = CancelConfirmedAppointmentCallbackHandler.convertFromCallbackData(callbackData)
+        val appointment = appointmentService.getById(appointmentId)
+        if (appointment == null) {
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = stringResources.getAppointmentNotFoundMessage(),
+                clearLastMessageReplyMarkup = true
+            )
+            return
+        }
         val serviceName = appointment.services.first().getDisplayName()
         val day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL)
         val time = appointment.startTime.format(VISIBLE_TIME_FORMATTER)
