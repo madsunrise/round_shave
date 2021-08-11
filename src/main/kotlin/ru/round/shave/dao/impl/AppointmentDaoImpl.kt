@@ -80,6 +80,10 @@ class AppointmentDaoImpl : AppointmentDao {
                 cb.and(
                     cb.greaterThan(root.get("endTime"), start),
                     cb.lessThanOrEqualTo(root.get("endTime"), end)
+                ),
+                cb.and(
+                    cb.lessThan(root.get("startTime"), start),
+                    cb.greaterThan(root.get("endTime"), end)
                 )
             )
         )
