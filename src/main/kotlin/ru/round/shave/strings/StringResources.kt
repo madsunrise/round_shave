@@ -79,4 +79,24 @@ interface StringResources {
         time: String,
         totalPrice: String
     ): String
+
+    fun getCancelAppointmentButtonText(): String
+
+    fun getCancelAppointmentConfirmationMessage(
+        serviceName: String,
+        day: String,
+        time: String
+    ): String
+
+    fun getCancelAppointmentConfirmButtonText(): String
+
+    fun getAppointmentHasBeenCancelledMessage(day: String, time: String): String
+
+    fun getAppointmentHasBeenCancelledAdminMessage(
+        serviceName: String,
+        day: String,
+        time: String,
+        user: User
+    ): String
+
 }

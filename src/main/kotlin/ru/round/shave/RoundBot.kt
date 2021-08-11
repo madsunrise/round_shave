@@ -12,10 +12,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import ru.round.shave.callback.BackCallbackHandler
-import ru.round.shave.callback.ChooseDateCallbackHandler
-import ru.round.shave.callback.ChooseServiceCallbackHandler
-import ru.round.shave.callback.ChooseTimeCallbackHandler
+import ru.round.shave.callback.*
 import ru.round.shave.entity.Appointment
 import ru.round.shave.entity.Back
 import ru.round.shave.entity.Service
@@ -114,6 +111,8 @@ class RoundBot {
                 callbackQuery { bot, update ->
                     val callbackQuery = update.callbackQuery!!
                     val callbackData = callbackQuery.data
+                    val chatId = update.callbackQuery!!.message!!.chat.id
+                    val tgUser = update.callbackQuery!!.from
                     when {
                         ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
                             handleServiceChosen(bot, callbackQuery)
@@ -126,6 +125,12 @@ class RoundBot {
                         }
                         BackCallbackHandler.canHandle(callbackData) -> {
                             goBack(bot, callbackQuery)
+                        }
+                        CancelAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
+                            askAboutAppointmentCancellation(bot, tgUser, chatId, callbackData)
+                        }
+                        CancelConfirmedAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
+                            cancelAppointment(bot, tgUser, chatId, callbackData)
                         }
                     }
                 }
@@ -226,7 +231,7 @@ class RoundBot {
             user = user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
-        sendMessageWithAppointments(bot, tgUser, chatId, appointments)
+        sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = false)
     }
 
     private fun sendAppointmentsInFutureMessage(bot: Bot, tgUser: User, chatId: Long) {
@@ -237,10 +242,16 @@ class RoundBot {
             user = user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
-        sendMessageWithAppointments(bot, tgUser, chatId, appointments)
+        sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = true)
     }
 
-    private fun sendMessageWithAppointments(bot: Bot, tgUser: User, chatId: Long, appointments: List<Appointment>) {
+    private fun sendMessageWithAppointments(
+        bot: Bot,
+        tgUser: User,
+        chatId: Long,
+        appointments: List<Appointment>,
+        addCancelButton: Boolean
+    ) {
         if (appointments.isEmpty()) {
             sendPersistentMessage(
                 bot = bot,
@@ -262,9 +273,68 @@ class RoundBot {
                 bot = bot,
                 tgUser = tgUser,
                 chatId = chatId,
-                text = text
+                text = text,
+                replyMarkup = if (addCancelButton) {
+                    InlineKeyboardMarkup.createSingleButton(createCancelAppointmentButton(appointment))
+                } else {
+                    null
+                }
             )
         }
+    }
+
+    private fun createCancelAppointmentButton(appointment: Appointment): InlineKeyboardButton {
+        val data = CancelAppointmentCallbackHandler(appointmentService).convertToCallbackData(appointment)
+        return InlineKeyboardButton(
+            text = stringResources.getCancelAppointmentButtonText(),
+            callbackData = data
+        )
+    }
+
+    private fun createCancelAppointmentConfirmButton(appointment: Appointment): InlineKeyboardButton {
+        val data = CancelConfirmedAppointmentCallbackHandler(appointmentService).convertToCallbackData(appointment)
+        return InlineKeyboardButton(
+            text = stringResources.getCancelAppointmentConfirmButtonText(),
+            callbackData = data
+        )
+    }
+
+    private fun askAboutAppointmentCancellation(bot: Bot, tgUser: User, chatId: Long, callbackData: String) {
+        val appointment = CancelAppointmentCallbackHandler(appointmentService).convertFromCallbackData(callbackData)
+        val service = appointment.services.first()
+        val text = stringResources.getCancelAppointmentConfirmationMessage(
+            serviceName = service.getDisplayName(),
+            day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
+            time = appointment.startTime.format(VISIBLE_TIME_FORMATTER)
+        )
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = text,
+            replyMarkup = InlineKeyboardMarkup.createSingleButton(createCancelAppointmentConfirmButton(appointment))
+        )
+    }
+
+    private fun cancelAppointment(bot: Bot, tgUser: User, chatId: Long, callbackData: String) {
+        val appointment =
+            CancelConfirmedAppointmentCallbackHandler(appointmentService).convertFromCallbackData(callbackData)
+        val serviceName = appointment.services.first().getDisplayName()
+        val day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL)
+        val time = appointment.startTime.format(VISIBLE_TIME_FORMATTER)
+        val text = stringResources.getAppointmentHasBeenCancelledMessage(
+            day = day,
+            time = time
+        )
+        appointmentService.delete(appointment)
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = text
+        )
+        val user = userService.getOrCreate(tgUser, chatId)
+        sendAppointmentCancelledAdminNotification(bot, serviceName, day, time, user)
     }
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery) {
@@ -524,7 +594,7 @@ class RoundBot {
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 keepMessage = true
             )
-            sendAppointmentAdminNotification(
+            sendNewAppointmentAdminNotification(
                 bot = bot,
                 serviceName = serviceName,
                 day = day,
@@ -663,7 +733,7 @@ class RoundBot {
         )
     }
 
-    private fun sendAppointmentAdminNotification(
+    private fun sendNewAppointmentAdminNotification(
         bot: Bot,
         serviceName: String,
         day: String,
@@ -672,7 +742,7 @@ class RoundBot {
         durationInMinutes: Int,
         user: ru.round.shave.entity.User
     ) {
-        val admins = ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+        val admins = getAdminUsers()
         if (admins.isEmpty()) {
             LOGGER.warn("No admins found!")
             return
@@ -693,11 +763,38 @@ class RoundBot {
         }
     }
 
+    private fun sendAppointmentCancelledAdminNotification(
+        bot: Bot,
+        serviceName: String,
+        day: String,
+        time: String,
+        user: ru.round.shave.entity.User
+    ) {
+        val admins = getAdminUsers()
+        if (admins.isEmpty()) {
+            LOGGER.warn("No admins found!")
+            return
+        }
+
+        val text = stringResources.getAppointmentHasBeenCancelledAdminMessage(
+            serviceName = serviceName,
+            day = day,
+            time = time,
+            user = user
+        )
+        for (admin in admins) {
+            bot.sendMessage(
+                chatId = admin.chatId,
+                text = text
+            )
+        }
+    }
+
     private fun sendPhoneSharedAdminNotification(
         bot: Bot,
         user: ru.round.shave.entity.User
     ) {
-        val admins = ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+        val admins = getAdminUsers()
         if (admins.isEmpty()) {
             LOGGER.warn("No admins found!")
             return
@@ -785,6 +882,10 @@ class RoundBot {
         return UUID.randomUUID().toString()
     }
 
+    private fun getAdminUsers(): List<ru.round.shave.entity.User> {
+        return ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+    }
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
         private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
@@ -794,8 +895,8 @@ class RoundBot {
         private val VISIBLE_DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
         private val VISIBLE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
 
-        private const val CALLBACK_DATA_RESET = "reset"
-        private const val CALLBACK_DATA_CONFIRM = "confirm"
+        private const val CALLBACK_DATA_RESET = "callback_data_reset"
+        private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_PAST = "appointments_in_past"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_FUTURE = "appointments_in_future"
 

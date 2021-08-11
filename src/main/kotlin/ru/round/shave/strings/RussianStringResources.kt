@@ -200,4 +200,40 @@ object RussianStringResources : StringResources {
             "Стоимость: $totalPrice"
         ).joinToString(separator = "\n")
     }
+
+    override fun getCancelAppointmentButtonText(): String {
+        return "Отменить"
+    }
+
+    override fun getCancelAppointmentConfirmationMessage(serviceName: String, day: String, time: String): String {
+        return mutableListOf(
+            "Вы уверены, что хотите отменить запись на $day $time?",
+            "",
+            "Услуга: $serviceName"
+        ).joinToString(separator = "\n")
+    }
+
+    override fun getCancelAppointmentConfirmButtonText(): String {
+        return "Да, отменить"
+    }
+
+    override fun getAppointmentHasBeenCancelledMessage(day: String, time: String): String {
+        return "Запись на $day $time отменена."
+    }
+
+    override fun getAppointmentHasBeenCancelledAdminMessage(
+        serviceName: String,
+        day: String,
+        time: String,
+        user: User
+    ): String {
+        val list = mutableListOf(
+            "Запись на $day $time отменена.",
+            "--",
+            "Услуга: $serviceName",
+            "--",
+        )
+        list.addAll(constructUserInfoForAdmins(user))
+        return list.joinToString(separator = "\n")
+    }
 }
