@@ -53,18 +53,22 @@ class RoundBot {
             logLevel = HttpLoggingInterceptor.Level.BODY
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
-                command("start", body = object : CommandHandleUpdate {
+                command(Command.START.key, body = object : CommandHandleUpdate {
                     override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        LOGGER.info("Handle start command!")
+                        LOGGER.info("Handle start command")
                         val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
                         val tgUser = p2.message!!.from!!
-                        sendPersistentMessage(
-                            bot = bot,
-                            tgUser = tgUser,
-                            chatId = chatId,
-                            text = stringResources.getHelloMessage()
-                        )
-                        sendMessageWithServicesList(bot, tgUser, chatId)
+                        sendHelloMessage(bot, tgUser, chatId)
+                        sendHelpMessage(bot, tgUser, chatId)
+                    }
+                })
+
+                command(Command.NEW_APPOINTMENT.key, body = object : CommandHandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
+                        LOGGER.info("Handle new appointment command")
+                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
+                        val tgUser = p2.message!!.from!!
+                        suggestServicesForAppointment(bot, tgUser, chatId)
                     }
                 })
 
@@ -108,7 +112,40 @@ class RoundBot {
         }.startPolling()
     }
 
-    private fun sendMessageWithServicesList(bot: Bot, tgUser: User, chatId: Long) {
+    private fun sendHelloMessage(bot: Bot, tgUser: User, chatId: Long) {
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = stringResources.getHelloMessage()
+        )
+    }
+
+    private fun sendHelpMessage(bot: Bot, tgUser: User, chatId: Long) {
+        val text = Command
+            .values()
+            .mapNotNull {
+                val desc = stringResources.getCommandDescription(it)
+                if (desc.isNullOrBlank()) {
+                    null
+                } else {
+                    it to desc
+                }
+            }.joinToString("\n") { getCommandDescriptionWithKey(it.first.key, it.second) }
+
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = text
+        )
+    }
+
+    private fun getCommandDescriptionWithKey(commandKey: String, description: String): String {
+        return "/${commandKey} ${description.decapitalize()}"
+    }
+
+    private fun suggestServicesForAppointment(bot: Bot, tgUser: User, chatId: Long) {
         sendReplaceableMessage(
             bot = bot,
             tgUser = tgUser,
@@ -275,7 +312,7 @@ class RoundBot {
         val buttons = serviceService.getAll().map {
             val callbackData = ChooseServiceCallbackHandler(serviceService).convertToCallbackData(it)
             //InlineKeyboardButton.CallbackData(it.getDisplayNameWithPrice(), callbackData)
-            InlineKeyboardButton(text = it.getDisplayNameWithPrice(), callbackData = callbackData)
+            InlineKeyboardButton(text = it.getDisplayName(), callbackData = callbackData)
         }
         //return InlineKeyboardMarkup.create(buttons.chunked(1))
         return InlineKeyboardMarkup(buttons.chunked(1))
@@ -480,7 +517,7 @@ class RoundBot {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
-        sendMessageWithServicesList(bot, callbackQuery.from, chatId)
+        suggestServicesForAppointment(bot, callbackQuery.from, chatId)
     }
 
     private fun createGoToBeginningButton(): InlineKeyboardButton {

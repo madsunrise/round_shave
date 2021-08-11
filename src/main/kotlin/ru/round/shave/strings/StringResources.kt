@@ -1,5 +1,6 @@
 package ru.round.shave.strings
 
+import ru.round.shave.Command
 import ru.round.shave.entity.User
 
 interface StringResources {
@@ -59,4 +60,6 @@ interface StringResources {
     ): String
 
     fun getPhoneSharedAdminMessage(user: User): String
+
+    fun getCommandDescription(command: Command): String?
 }

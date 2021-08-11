@@ -1,5 +1,6 @@
 package ru.round.shave.strings
 
+import ru.round.shave.Command
 import ru.round.shave.entity.User
 
 object RussianStringResources : StringResources {
@@ -160,5 +161,14 @@ object RussianStringResources : StringResources {
         }
 
         return result
+    }
+
+    override fun getCommandDescription(command: Command): String? {
+        return when (command) {
+            Command.START -> null
+            Command.NEW_APPOINTMENT -> "Записаться на стрижку"
+            Command.PRICE_LIST -> "Посмотреть цены"
+            Command.MY_APPOINTMENTS -> "Мои записи"
+        }
     }
 }
