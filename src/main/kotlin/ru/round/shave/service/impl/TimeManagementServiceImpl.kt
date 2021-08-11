@@ -34,7 +34,7 @@ class TimeManagementServiceImpl : TimeManagementService {
 
     override fun getFreeWindows(day: LocalDate, requiredDuration: Int): List<LocalTime> {
         val windowsThatSatisfyUs = getAllFreeWindows(day).filter { it.getDurationInMinutes() >= requiredDuration }
-        val sliced = windowsThatSatisfyUs.flatMap { it.sliceByHalfHour(lastWindowMinDuration = requiredDuration) }
+        val sliced = windowsThatSatisfyUs.flatMap { it.sliceByHalfHour(windowMinDuration = requiredDuration) }
         return sliced.map { it.start }
     }
 
@@ -74,24 +74,37 @@ class TimeManagementServiceImpl : TimeManagementService {
         }
 
         /**
-         * Imagine that current window is (11:45, 13:55) and lastWindowMinDuration = 20.
+         * Imagine that current window is (11:45, 13:55) and windowMinDuration = 20.
          * This method will return you next result:
          * [(11:45, 12:00), (12:00, 12:30), (12:30, 13:00), (13:00, 13:30), (13:30, 13:55)].
          *
-         * Now imagine that current window is the same (11:45, 13:55) and lastWindowMinDuration = 45.
+         * Now imagine that current window is the same (11:45, 13:55) and windowMinDuration = 45.
          * This method will return you next result:
          * [(11:45, 12:00), (12:00, 12:30), (12:30, 13:00), (13:00, 13:55)]
+         *
+         * Finally, imagine that current window is (13:45, 14:30) and windowMinDuration = 45.
+         * This method will return you next result: [(13:45, 14:30)]
          */
-        fun sliceByHalfHour(lastWindowMinDuration: Int): List<Window> {
+        fun sliceByHalfHour(windowMinDuration: Int): List<Window> {
             var first = start
             var second = minOf(first.appendToClosestHalf(), this.end)
+
+            if (second == this.end) {
+                return listOf(this)
+            }
+
+            if (second < this.end && Duration.between(second, this.end).toMinutes() < windowMinDuration) {
+                // it's required to cover case with Window(13:45, 14:30) and windowMinDuration = 45
+                return listOf(this)
+            }
+
             val result = mutableListOf<Window>()
             while (first < second) {
                 val window = Window(first, second)
                 first = second
                 second = minOf(first.appendToClosestHalf(), this.end)
                 result.add(window)
-                if (second < this.end && Duration.between(second, this.end).toMinutes() < lastWindowMinDuration) {
+                if (second < this.end && Duration.between(second, this.end).toMinutes() < windowMinDuration) {
                     val lastWindow = Window(window.end, this.end)
                     result.add(lastWindow)
                     break
