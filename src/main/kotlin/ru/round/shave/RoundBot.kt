@@ -3,10 +3,7 @@ package ru.round.shave
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.callbackQuery
-import com.github.kotlintelegrambot.dispatcher.command
-import com.github.kotlintelegrambot.dispatcher.contact
-import com.github.kotlintelegrambot.dispatcher.text
+import com.github.kotlintelegrambot.dispatcher.*
 import com.github.kotlintelegrambot.entities.*
 import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
@@ -56,82 +53,132 @@ class RoundBot {
             dispatch {
                 command(Command.START.key) { bot, update ->
                     LOGGER.info("Handle start command")
-                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
-                    val tgUser = update.message!!.from!!
-                    sendHelloMessage(bot, tgUser, chatId)
-                    sendHelpMessage(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        sendHelloMessage(bot, tgUser, chatId)
+                        sendHelpMessage(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 command(Command.NEW_APPOINTMENT.key) { bot, update ->
                     LOGGER.info("Handle new appointment command")
-                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
-                    val tgUser = update.message!!.from!!
-                    suggestServicesForAppointment(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        suggestServicesForAppointment(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 command(Command.PRICE_LIST.key) { bot, update ->
                     LOGGER.info("Handle price list command")
-                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
-                    val tgUser = update.message!!.from!!
-                    sendPriceList(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        sendPriceList(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 command(Command.MY_APPOINTMENTS.key) { bot, update ->
                     LOGGER.info("Handle my appointments command")
-                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
-                    val tgUser = update.message!!.from!!
-                    sendMyAppointmentsMessage(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        sendMyAppointmentsMessage(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 callbackQuery(data = CALLBACK_DATA_RESET) { bot, update ->
-                    resetEverything(bot, update.callbackQuery!!)
+                    try {
+                        resetEverything(bot, update.callbackQuery!!)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 callbackQuery(data = CALLBACK_DATA_CONFIRM) { bot, update ->
-                    handleConfirm(bot, update.callbackQuery!!)
+                    try {
+                        handleConfirm(bot, update.callbackQuery!!)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_PAST) { bot, update ->
-                    val chatId = update.callbackQuery!!.message!!.chat.id
-                    val tgUser = update.callbackQuery!!.from
-                    sendAppointmentsInPastMessage(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.callbackQuery!!.message!!.chat.id
+                        val tgUser = update.callbackQuery!!.from
+                        sendAppointmentsInPastMessage(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE) { bot, update ->
-                    val chatId = update.callbackQuery!!.message!!.chat.id
-                    val tgUser = update.callbackQuery!!.from
-                    sendAppointmentsInFutureMessage(bot, tgUser, chatId)
+                    try {
+                        val chatId = update.callbackQuery!!.message!!.chat.id
+                        val tgUser = update.callbackQuery!!.from
+                        sendAppointmentsInFutureMessage(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 contact { bot, update, contact ->
                     LOGGER.info("Handle contact callback: $contact")
-                    handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
+                    try {
+                        handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
                 }
 
                 callbackQuery { bot, update ->
-                    val callbackQuery = update.callbackQuery!!
-                    val callbackData = callbackQuery.data
-                    val chatId = update.callbackQuery!!.message!!.chat.id
-                    val tgUser = update.callbackQuery!!.from
-                    when {
-                        ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
-                            handleServiceChosen(bot, callbackQuery)
+                    try {
+                        val callbackQuery = update.callbackQuery!!
+                        val callbackData = callbackQuery.data
+                        val chatId = update.callbackQuery!!.message!!.chat.id
+                        val tgUser = update.callbackQuery!!.from
+                        when {
+                            ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
+                                handleServiceChosen(bot, callbackQuery)
+                            }
+                            ChooseDateCallbackHandler.canHandle(callbackData) -> {
+                                handleDayChosen(bot, callbackQuery)
+                            }
+                            ChooseTimeCallbackHandler.canHandle(callbackData) -> {
+                                handleTimeChosen(bot, callbackQuery)
+                            }
+                            BackCallbackHandler.canHandle(callbackData) -> {
+                                goBack(bot, callbackQuery)
+                            }
+                            CancelAppointmentCallbackHandler.canHandle(callbackData) -> {
+                                askAboutAppointmentCancellation(bot, tgUser, chatId, callbackData)
+                            }
+                            CancelConfirmedAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
+                                cancelAppointment(bot, tgUser, chatId, callbackData)
+                            }
                         }
-                        ChooseDateCallbackHandler.canHandle(callbackData) -> {
-                            handleDayChosen(bot, callbackQuery)
-                        }
-                        ChooseTimeCallbackHandler.canHandle(callbackData) -> {
-                            handleTimeChosen(bot, callbackQuery)
-                        }
-                        BackCallbackHandler.canHandle(callbackData) -> {
-                            goBack(bot, callbackQuery)
-                        }
-                        CancelAppointmentCallbackHandler.canHandle(callbackData) -> {
-                            askAboutAppointmentCancellation(bot, tgUser, chatId, callbackData)
-                        }
-                        CancelConfirmedAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
-                            cancelAppointment(bot, tgUser, chatId, callbackData)
-                        }
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
                     }
                 }
 
@@ -143,6 +190,11 @@ class RoundBot {
                         val tgUser = update.message!!.from!!
                         sendHelpMessage(bot, tgUser, chatId)
                     }
+                }
+
+                telegramError { bot, telegramError ->
+                    LOGGER.error("Telegram error handled: $telegramError")
+                    sendErrorToDeveloper(bot, telegramError.getErrorMessage())
                 }
             }
         }.startPolling()
@@ -982,6 +1034,14 @@ class RoundBot {
         return ADMIN_USER_IDS.contains(userId)
     }
 
+    private fun sendErrorToDeveloper(bot: Bot, error: String) {
+        val developer = userService.getById(DEVELOPER_USER_ID) ?: return
+        bot.sendMessage(
+            chatId = developer.chatId,
+            text = "Achtung! $error"
+        )
+    }
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
         private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
@@ -998,6 +1058,7 @@ class RoundBot {
 
         private const val DAYS_PER_ROW = 4
 
-        private val ADMIN_USER_IDS = arrayOf(225893185L)
+        private val DEVELOPER_USER_ID = 225893185L
+        private val ADMIN_USER_IDS = arrayOf(DEVELOPER_USER_ID)
     }
 }
