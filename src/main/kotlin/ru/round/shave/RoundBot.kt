@@ -226,10 +226,10 @@ class RoundBot {
 
     private fun sendAppointmentsInPastMessage(bot: Bot, tgUser: User, chatId: Long) {
         val user = userService.getOrCreate(tgUser, chatId)
-        LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
+        LOGGER.info("Sending appointments in past for ${user.getLogInfo()}")
         val appointments = appointmentService.getAppointmentsInPast(
             currentTime = getUserCurrentTime(),
-            user = user,
+            user = if (isAdmin(user.id)) null else user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
         sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = false)
@@ -237,10 +237,10 @@ class RoundBot {
 
     private fun sendAppointmentsInFutureMessage(bot: Bot, tgUser: User, chatId: Long) {
         val user = userService.getOrCreate(tgUser, chatId)
-        LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
+        LOGGER.info("Sending appointments in future for ${user.getLogInfo()}")
         val appointments = appointmentService.getAppointmentsInFuture(
             currentTime = getUserCurrentTime(),
-            user = user,
+            user = if (isAdmin(user.id)) null else user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
         sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = true)
@@ -264,18 +264,28 @@ class RoundBot {
         }
         for (appointment in appointments) {
             val service = appointment.services.first()
-            val text = stringResources.getAppointmentDescription(
-                serviceName = service.getDisplayName(),
-                day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
-                time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
-                totalPrice = service.getDisplayPrice()
-            )
+            val text = if (isAdmin(tgUser.id)) {
+                stringResources.getAppointmentDescriptionForAdmin(
+                    serviceName = service.getDisplayName(),
+                    day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
+                    time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
+                    totalPrice = service.getDisplayPrice(),
+                    user = appointment.user
+                )
+            } else {
+                stringResources.getAppointmentDescription(
+                    serviceName = service.getDisplayName(),
+                    day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
+                    time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
+                    totalPrice = service.getDisplayPrice()
+                )
+            }
             sendPersistentMessage(
                 bot = bot,
                 tgUser = tgUser,
                 chatId = chatId,
                 text = text,
-                replyMarkup = if (addCancelButton) {
+                replyMarkup = if (addCancelButton && !isAdmin(tgUser.id)) {
                     InlineKeyboardMarkup.createSingleButton(createCancelAppointmentButton(appointment))
                 } else {
                     null
@@ -886,6 +896,10 @@ class RoundBot {
 
     private fun getAdminUsers(): List<ru.round.shave.entity.User> {
         return ADMIN_USER_IDS.mapNotNull { userService.getById(it) }
+    }
+
+    private fun isAdmin(userId: Long): Boolean {
+        return ADMIN_USER_IDS.contains(userId)
     }
 
     companion object {

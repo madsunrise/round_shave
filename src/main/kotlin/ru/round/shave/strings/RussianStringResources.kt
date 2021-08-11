@@ -201,6 +201,23 @@ object RussianStringResources : StringResources {
         ).joinToString(separator = "\n")
     }
 
+    override fun getAppointmentDescriptionForAdmin(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        user: User
+    ): String {
+        val list = mutableListOf(
+            serviceName,
+            "$day в $time",
+            "Стоимость: $totalPrice",
+            "--"
+        )
+        list.addAll(constructUserInfoForAdmins(user))
+        return list.joinToString(separator = "\n")
+    }
+
     override fun getCancelAppointmentButtonText(): String {
         return "Отменить"
     }

@@ -39,7 +39,7 @@ open class AppointmentServiceImpl : AppointmentService {
 
     override fun getAppointmentsInPast(
         currentTime: LocalDateTime,
-        user: User,
+        user: User?,
         orderBy: AppointmentService.OrderBy
     ): List<Appointment> {
         return appointmentDao.getAppointmentsInPast(currentTime, user, mapOrderBy(orderBy))
@@ -47,7 +47,7 @@ open class AppointmentServiceImpl : AppointmentService {
 
     override fun getAppointmentsInFuture(
         currentTime: LocalDateTime,
-        user: User,
+        user: User?,
         orderBy: AppointmentService.OrderBy
     ): List<Appointment> {
         return appointmentDao.getAppointmentsInFuture(currentTime, user, mapOrderBy(orderBy))

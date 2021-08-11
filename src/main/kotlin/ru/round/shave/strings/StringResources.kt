@@ -80,6 +80,14 @@ interface StringResources {
         totalPrice: String
     ): String
 
+    fun getAppointmentDescriptionForAdmin(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        user: User
+    ): String
+
     fun getCancelAppointmentButtonText(): String
 
     fun getCancelAppointmentConfirmationMessage(

@@ -68,7 +68,7 @@ class AppointmentDaoImpl : AppointmentDao {
 
     override fun getAppointmentsInPast(
         currentTime: LocalDateTime,
-        user: User,
+        user: User?,
         orderBy: AppointmentDao.OrderBy
     ): List<Appointment> {
         val cb = em.criteriaBuilder
@@ -77,7 +77,9 @@ class AppointmentDaoImpl : AppointmentDao {
 
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.lessThan(root.get("endTime"), currentTime))
-        predicates.add(cb.equal(root.get<User>("user"), user))
+        if (user != null) {
+            predicates.add(cb.equal(root.get<User>("user"), user))
+        }
 
         query
             .select(root)
@@ -94,7 +96,7 @@ class AppointmentDaoImpl : AppointmentDao {
 
     override fun getAppointmentsInFuture(
         currentTime: LocalDateTime,
-        user: User,
+        user: User?,
         orderBy: AppointmentDao.OrderBy
     ): List<Appointment> {
         val cb = em.criteriaBuilder
@@ -103,7 +105,9 @@ class AppointmentDaoImpl : AppointmentDao {
 
         val predicates = mutableListOf<Predicate>()
         predicates.add(cb.greaterThan(root.get("startTime"), currentTime))
-        predicates.add(cb.equal(root.get<User>("user"), user))
+        if (user != null) {
+            predicates.add(cb.equal(root.get<User>("user"), user))
+        }
 
         query
             .select(root)
