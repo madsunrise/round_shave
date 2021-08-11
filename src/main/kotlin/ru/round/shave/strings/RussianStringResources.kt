@@ -172,4 +172,28 @@ object RussianStringResources : StringResources {
             Command.MY_APPOINTMENTS -> "Мои записи"
         }
     }
+
+    override fun getChooseAppointmentTypeText(): String {
+        return "Какие записи вас интересуют?"
+    }
+
+    override fun getAppointmentsInPastButtonText(): String {
+        return "Прошедшие"
+    }
+
+    override fun getAppointmentsInFutureButtonText(): String {
+        return "Предстоящие"
+    }
+
+    override fun getNoAppointmentsFoundMessage(): String {
+        return "Записей нет"
+    }
+
+    override fun getAppointmentDescription(serviceName: String, day: String, time: String, totalPrice: String): String {
+        return mutableListOf(
+            serviceName,
+            "$day в $time",
+            "Стоимость: $totalPrice"
+        ).joinToString(separator = "\n")
+    }
 }

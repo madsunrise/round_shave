@@ -80,7 +80,7 @@ class RoundBot {
                     LOGGER.info("Handle my appointments command")
                     val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
                     val tgUser = update.message!!.from!!
-                    // TODO
+                    sendMyAppointmentsMessage(bot, tgUser, chatId)
                 }
 
                 callbackQuery(data = CALLBACK_DATA_RESET) { bot, update ->
@@ -89,6 +89,18 @@ class RoundBot {
 
                 callbackQuery(data = CALLBACK_DATA_CONFIRM) { bot, update ->
                     handleConfirm(bot, update.callbackQuery!!)
+                }
+
+                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_PAST) { bot, update ->
+                    val chatId = update.callbackQuery!!.message!!.chat.id
+                    val tgUser = update.callbackQuery!!.from
+                    sendAppointmentsInPastMessage(bot, tgUser, chatId)
+                }
+
+                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE) { bot, update ->
+                    val chatId = update.callbackQuery!!.message!!.chat.id
+                    val tgUser = update.callbackQuery!!.from
+                    sendAppointmentsInFutureMessage(bot, tgUser, chatId)
                 }
 
                 contact { bot, update, contact ->
@@ -169,6 +181,78 @@ class RoundBot {
             chatId = chatId,
             text = text
         )
+    }
+
+    private fun sendMyAppointmentsMessage(bot: Bot, tgUser: User, chatId: Long) {
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = stringResources.getChooseAppointmentTypeText(),
+            replyMarkup = InlineKeyboardMarkup(
+                listOf(
+                    listOf(
+                        InlineKeyboardButton(
+                            text = stringResources.getAppointmentsInPastButtonText(),
+                            callbackData = CALLBACK_DATA_APPOINTMENTS_IN_PAST
+                        ),
+                        InlineKeyboardButton(
+                            text = stringResources.getAppointmentsInFutureButtonText(),
+                            callbackData = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    private fun sendAppointmentsInPastMessage(bot: Bot, tgUser: User, chatId: Long) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
+        val appointments = appointmentService.getAppointmentsInPast(
+            currentTime = getCurrentLocalTime(),
+            user = user,
+            orderBy = AppointmentService.OrderBy.TIME_ASC
+        )
+        sendMessageWithAppointments(bot, tgUser, chatId, appointments)
+    }
+
+    private fun sendAppointmentsInFutureMessage(bot: Bot, tgUser: User, chatId: Long) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        LOGGER.info("Sending appointments in past message for ${user.getLogInfo()}")
+        val appointments = appointmentService.getAppointmentsInFuture(
+            currentTime = getCurrentLocalTime(),
+            user = user,
+            orderBy = AppointmentService.OrderBy.TIME_ASC
+        )
+        sendMessageWithAppointments(bot, tgUser, chatId, appointments)
+    }
+
+    private fun sendMessageWithAppointments(bot: Bot, tgUser: User, chatId: Long, appointments: List<Appointment>) {
+        if (appointments.isEmpty()) {
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = stringResources.getNoAppointmentsFoundMessage()
+            )
+            return
+        }
+        for (appointment in appointments) {
+            val service = appointment.services.first()
+            val text = stringResources.getAppointmentDescription(
+                serviceName = service.getDisplayName(),
+                day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
+                time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
+                totalPrice = service.getDisplayPrice()
+            )
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = text
+            )
+        }
     }
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery) {
@@ -667,6 +751,10 @@ class RoundBot {
         return response.first?.body()?.result?.messageId
     }
 
+    private fun getCurrentLocalTime(): LocalDateTime {
+        return LocalDateTime.now(TIME_ZONE)
+    }
+
     private fun createIgnoredCallbackData(): String {
         return UUID.randomUUID().toString()
     }
@@ -682,6 +770,8 @@ class RoundBot {
 
         private const val CALLBACK_DATA_RESET = "reset"
         private const val CALLBACK_DATA_CONFIRM = "confirm"
+        private const val CALLBACK_DATA_APPOINTMENTS_IN_PAST = "appointments_in_past"
+        private const val CALLBACK_DATA_APPOINTMENTS_IN_FUTURE = "appointments_in_future"
 
         private const val DAYS_PER_ROW = 4
 

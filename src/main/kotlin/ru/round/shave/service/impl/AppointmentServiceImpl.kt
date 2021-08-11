@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import ru.round.shave.dao.AppointmentDao
 import ru.round.shave.entity.Appointment
+import ru.round.shave.entity.User
 import ru.round.shave.service.AppointmentService
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
 @Transactional(rollbackFor = [Exception::class])
@@ -33,6 +35,22 @@ open class AppointmentServiceImpl : AppointmentService {
 
     override fun getAll(day: LocalDate, orderBy: AppointmentService.OrderBy): List<Appointment> {
         return appointmentDao.getAll(day, mapOrderBy(orderBy))
+    }
+
+    override fun getAppointmentsInPast(
+        currentTime: LocalDateTime,
+        user: User,
+        orderBy: AppointmentService.OrderBy
+    ): List<Appointment> {
+        return appointmentDao.getAppointmentsInPast(currentTime, user, mapOrderBy(orderBy))
+    }
+
+    override fun getAppointmentsInFuture(
+        currentTime: LocalDateTime,
+        user: User,
+        orderBy: AppointmentService.OrderBy
+    ): List<Appointment> {
+        return appointmentDao.getAppointmentsInFuture(currentTime, user, mapOrderBy(orderBy))
     }
 
     private fun mapOrderBy(orderBy: AppointmentService.OrderBy): AppointmentDao.OrderBy {

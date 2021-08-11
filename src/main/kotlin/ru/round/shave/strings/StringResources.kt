@@ -62,4 +62,19 @@ interface StringResources {
     fun getPhoneSharedAdminMessage(user: User): String
 
     fun getCommandDescription(command: Command): String?
+
+    fun getChooseAppointmentTypeText(): String
+
+    fun getAppointmentsInPastButtonText(): String
+
+    fun getAppointmentsInFutureButtonText(): String
+
+    fun getNoAppointmentsFoundMessage(): String
+
+    fun getAppointmentDescription(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String
+    ): String
 }
