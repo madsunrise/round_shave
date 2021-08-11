@@ -1,8 +1,6 @@
 package ru.round.shave.callback
 
-abstract class BaseCallbackHandler<T> : CallbackHandler<T> {
-
-    protected abstract val prefix: String
+abstract class BaseCallbackHandler<T>(private val prefix: String) : CallbackHandler<T> {
 
     override fun canHandle(callbackData: String): Boolean {
         return callbackData.startsWith(prefix)

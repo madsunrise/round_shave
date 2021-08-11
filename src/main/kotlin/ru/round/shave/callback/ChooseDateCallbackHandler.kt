@@ -3,9 +3,7 @@ package ru.round.shave.callback
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-object ChooseDateCallbackHandler : BaseCallbackHandler<LocalDate>() {
-
-    override val prefix: String = Prefixes.CHOOSE_DATE_PREFIX
+object ChooseDateCallbackHandler : BaseCallbackHandler<LocalDate>(Prefixes.CHOOSE_DATE_PREFIX) {
 
     private val FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 

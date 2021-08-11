@@ -3,9 +3,7 @@ package ru.round.shave.callback
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-object ChooseTimeCallbackHandler : BaseCallbackHandler<LocalTime>() {
-
-    override val prefix: String = Prefixes.CHOOSE_TIME_PREFIX
+object ChooseTimeCallbackHandler : BaseCallbackHandler<LocalTime>(Prefixes.CHOOSE_TIME_PREFIX) {
 
     private val FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
 
