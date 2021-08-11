@@ -6,6 +6,7 @@ import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.callbackQuery
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.contact
+import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.*
 import okhttp3.logging.HttpLoggingInterceptor
 import org.slf4j.LoggerFactory
@@ -126,6 +127,15 @@ class RoundBot {
                         BackCallbackHandler.canHandle(callbackData) -> {
                             goBack(bot, callbackQuery)
                         }
+                    }
+                }
+
+                text { bot, update ->
+                    val text = update.message!!.text
+                    if (text?.startsWith('/') == false) {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        sendHelpMessage(bot, tgUser, chatId)
                     }
                 }
             }
