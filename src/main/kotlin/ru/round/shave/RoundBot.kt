@@ -53,79 +53,66 @@ class RoundBot {
             logLevel = HttpLoggingInterceptor.Level.BODY
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
-                command(Command.START.key, body = object : CommandHandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        LOGGER.info("Handle start command")
-                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
-                        val tgUser = p2.message!!.from!!
-                        sendHelloMessage(bot, tgUser, chatId)
-                        sendHelpMessage(bot, tgUser, chatId)
-                    }
-                })
+                command(Command.START.key) { bot, update ->
+                    LOGGER.info("Handle start command")
+                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
+                    val tgUser = update.message!!.from!!
+                    sendHelloMessage(bot, tgUser, chatId)
+                    sendHelpMessage(bot, tgUser, chatId)
+                }
 
-                command(Command.NEW_APPOINTMENT.key, body = object : CommandHandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        LOGGER.info("Handle new appointment command")
-                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
-                        val tgUser = p2.message!!.from!!
-                        suggestServicesForAppointment(bot, tgUser, chatId)
-                    }
-                })
+                command(Command.NEW_APPOINTMENT.key) { bot, update ->
+                    LOGGER.info("Handle new appointment command")
+                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
+                    val tgUser = update.message!!.from!!
+                    suggestServicesForAppointment(bot, tgUser, chatId)
+                }
 
-                command(Command.PRICE_LIST.key, body = object : CommandHandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        LOGGER.info("Handle price list command")
-                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
-                        val tgUser = p2.message!!.from!!
-                        sendPriceList(bot, tgUser, chatId)
-                    }
-                })
+                command(Command.PRICE_LIST.key) { bot, update ->
+                    LOGGER.info("Handle price list command")
+                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
+                    val tgUser = update.message!!.from!!
+                    sendPriceList(bot, tgUser, chatId)
+                }
 
-                command(Command.MY_APPOINTMENTS.key, body = object : CommandHandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        LOGGER.info("Handle my appointments command")
-                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
-                        val tgUser = p2.message!!.from!!
-                        // TODO
-                    }
-                })
+                command(Command.MY_APPOINTMENTS.key) { bot, update ->
+                    LOGGER.info("Handle my appointments command")
+                    val chatId = update.message!!.chat.id //ChatId.fromId(message.chat.id)
+                    val tgUser = update.message!!.from!!
+                    // TODO
+                }
 
-                callbackQuery(data = CALLBACK_DATA_RESET, body = object : HandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update) {
-                        resetEverything(bot, p2.callbackQuery!!)
-                    }
-                })
+                callbackQuery(data = CALLBACK_DATA_RESET) { bot, update ->
+                    resetEverything(bot, update.callbackQuery!!)
+                }
 
-                callbackQuery(data = CALLBACK_DATA_CONFIRM, body = object : HandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update) {
-                        handleConfirm(bot, p2.callbackQuery!!)
-                    }
-                })
+                callbackQuery(data = CALLBACK_DATA_CONFIRM) { bot, update ->
+                    handleConfirm(bot, update.callbackQuery!!)
+                }
 
                 contact { bot, update, contact ->
                     LOGGER.info("Handle contact callback: $contact")
                     handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
                 }
 
-                callbackQuery(body = object : HandleUpdate {
-                    override fun invoke(bot: Bot, p2: Update) {
-                        val callbackData = p2.callbackQuery!!.data
-                        when {
-                            ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
-                                handleServiceChosen(bot, p2.callbackQuery!!)
-                            }
-                            ChooseDateCallbackHandler.canHandle(callbackData) -> {
-                                handleDayChosen(bot, p2.callbackQuery!!)
-                            }
-                            ChooseTimeCallbackHandler.canHandle(callbackData) -> {
-                                handleTimeChosen(bot, p2.callbackQuery!!)
-                            }
-                            BackCallbackHandler.canHandle(callbackData) -> {
-                                goBack(bot, p2.callbackQuery!!)
-                            }
+                callbackQuery { bot, update ->
+                    val callbackQuery = update.callbackQuery!!
+                    val callbackData = callbackQuery.data
+                    when {
+                        ChooseServiceCallbackHandler(serviceService).canHandle(callbackData) -> {
+                            handleServiceChosen(bot, callbackQuery)
+                        }
+                        ChooseDateCallbackHandler.canHandle(callbackData) -> {
+                            handleDayChosen(bot, callbackQuery)
+                        }
+                        ChooseTimeCallbackHandler.canHandle(callbackData) -> {
+                            handleTimeChosen(bot, callbackQuery)
+                        }
+                        BackCallbackHandler.canHandle(callbackData) -> {
+                            goBack(bot, callbackQuery)
                         }
                     }
-                })
+                }
             }
         }.startPolling()
     }
