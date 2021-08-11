@@ -90,6 +90,8 @@ interface StringResources {
 
     fun getCancelAppointmentButtonText(): String
 
+    fun getAppointmentNotFoundMessage(): String
+
     fun getCancelAppointmentConfirmationMessage(
         serviceName: String,
         day: String,

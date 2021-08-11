@@ -126,7 +126,7 @@ class RoundBot {
                         BackCallbackHandler.canHandle(callbackData) -> {
                             goBack(bot, callbackQuery)
                         }
-                        CancelAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
+                        CancelAppointmentCallbackHandler.canHandle(callbackData) -> {
                             askAboutAppointmentCancellation(bot, tgUser, chatId, callbackData)
                         }
                         CancelConfirmedAppointmentCallbackHandler(appointmentService).canHandle(callbackData) -> {
@@ -303,7 +303,7 @@ class RoundBot {
     }
 
     private fun createCancelAppointmentButton(appointment: Appointment): InlineKeyboardButton {
-        val data = CancelAppointmentCallbackHandler(appointmentService).convertToCallbackData(appointment)
+        val data = CancelAppointmentCallbackHandler.convertToCallbackData(appointment.id)
         return InlineKeyboardButton(
             text = stringResources.getCancelAppointmentButtonText(),
             callbackData = data
@@ -319,7 +319,18 @@ class RoundBot {
     }
 
     private fun askAboutAppointmentCancellation(bot: Bot, tgUser: User, chatId: Long, callbackData: String) {
-        val appointment = CancelAppointmentCallbackHandler(appointmentService).convertFromCallbackData(callbackData)
+        val appointmentId = CancelAppointmentCallbackHandler.convertFromCallbackData(callbackData)
+        val appointment = appointmentService.getById(appointmentId)
+        if (appointment == null) {
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = stringResources.getAppointmentNotFoundMessage(),
+                clearLastMessageReplyMarkup = true
+            )
+            return
+        }
         val service = appointment.services.first()
         val text = stringResources.getCancelAppointmentConfirmationMessage(
             serviceName = service.getDisplayName(),

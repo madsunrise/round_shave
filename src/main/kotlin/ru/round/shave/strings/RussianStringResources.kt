@@ -222,6 +222,10 @@ object RussianStringResources : StringResources {
         return "Отменить"
     }
 
+    override fun getAppointmentNotFoundMessage(): String {
+        return "Запись не найдена."
+    }
+
     override fun getCancelAppointmentConfirmationMessage(serviceName: String, day: String, time: String): String {
         return mutableListOf(
             "Вы уверены, что хотите отменить запись на $day $time?",
