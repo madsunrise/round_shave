@@ -137,7 +137,8 @@ class RoundBot {
 
                 text { bot, update ->
                     val text = update.message!!.text
-                    if (text?.startsWith('/') == false) {
+                    if (!text.isNullOrBlank() && Command.findCommand(text) == null) {
+                        LOGGER.info("Received text: $text. Sending help.")
                         val chatId = update.message!!.chat.id
                         val tgUser = update.message!!.from!!
                         sendHelpMessage(bot, tgUser, chatId)
