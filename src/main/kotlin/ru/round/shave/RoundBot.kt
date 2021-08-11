@@ -339,8 +339,8 @@ class RoundBot {
             //InlineKeyboardButton.CallbackData(it.getDisplayNameWithPrice(), callbackData)
             InlineKeyboardButton(text = it.getDisplayName(), callbackData = callbackData)
         }
-        //return InlineKeyboardMarkup.create(buttons.chunked(1))
-        return InlineKeyboardMarkup(buttons.chunked(1))
+        //return InlineKeyboardMarkup.create(buttons.map { listOf(it) })
+        return InlineKeyboardMarkup(buttons.map { listOf(it) })
     }
 
     private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton> {
