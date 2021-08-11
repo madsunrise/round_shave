@@ -49,15 +49,22 @@ class RoundBot {
 
     @PostConstruct
     fun run() {
-        val bot = bot {
+        bot {
             logLevel = HttpLoggingInterceptor.Level.BODY
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
                 command("start", body = object : CommandHandleUpdate {
                     override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
-                        val chatId = p2.message!!.chat.id//ChatId.fromId(message.chat.id)
-                        bot.sendMessage(chatId, stringResources.getHelloMessage())
-                        sendInitialMessage(bot, chatId)
+                        LOGGER.info("Handle start command!")
+                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
+                        val tgUser = p2.message!!.from!!
+                        sendPersistentMessage(
+                            bot = bot,
+                            tgUser = tgUser,
+                            chatId = chatId,
+                            text = stringResources.getHelloMessage()
+                        )
+                        sendMessageWithServicesList(bot, tgUser, chatId)
                     }
                 })
 
@@ -98,14 +105,15 @@ class RoundBot {
                     }
                 })
             }
-        }
-        bot.startPolling()
+        }.startPolling()
     }
 
-    private fun sendInitialMessage(bot: Bot, chatId: Long) {
-        bot.sendMessage(
-            chatId,
-            stringResources.getChooseServiceTypeMessage(),
+    private fun sendMessageWithServicesList(bot: Bot, tgUser: User, chatId: Long) {
+        sendReplaceableMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = stringResources.getChooseServiceTypeMessage(),
             replyMarkup = createChooseServiceKeyboard()
         )
     }
@@ -123,7 +131,9 @@ class RoundBot {
         val freeDaysButtons = createChooseDayKeyboard(service.duration)
         if (freeDaysButtons.isEmpty()) {
             LOGGER.warn("Free days are not found!")
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getAppointmentTemporarilyUnavailableMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -132,7 +142,9 @@ class RoundBot {
             val state = stateService.createNewState(user)
             stateService.handleServiceChosen(state, service)
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getChooseDayMessage(service.getDisplayName(), service.duration),
                 replyMarkup = InlineKeyboardMarkup(withBackButton)
@@ -153,7 +165,9 @@ class RoundBot {
         if (state == null) {
             LOGGER.warn("handleDayChosen: State is null!")
             stateService.clearState(user)
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -166,9 +180,11 @@ class RoundBot {
         if (slots.isEmpty()) {
             val freeDaysButtons = createChooseDayKeyboard(duration)
             val withBackButton = freeDaysButtons.chunked(DAYS_PER_ROW) + listOf(createBackButton(Back.BACK_TO_SERVICES))
-            bot.sendMessage(
-                chatId,
-                stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
+                chatId = chatId,
+                text = stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
                 replyMarkup = InlineKeyboardMarkup(withBackButton)
             )
             return
@@ -187,7 +203,9 @@ class RoundBot {
         }
 
         val withBackButton = list.chunked(4) + listOf(createBackButton(Back.BACK_TO_CHOOSE_DAY))
-        bot.sendMessage(
+        sendReplaceableMessage(
+            bot = bot,
+            tgUser = callbackQuery.from,
             chatId = chatId,
             text = stringResources.getChooseTimeMessage(
                 serviceName = state.service.getDisplayName(),
@@ -210,7 +228,9 @@ class RoundBot {
         if (state == null) {
             LOGGER.warn("handleTimeChosen: State is null!")
             stateService.clearState(user)
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -223,7 +243,9 @@ class RoundBot {
         if (!stateService.isFilled(state)) {
             LOGGER.warn("State is not filled!")
             stateService.clearState(user)
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -234,7 +256,9 @@ class RoundBot {
         val keyboard = createConfirmKeyboard()
         val withBackButton = keyboard + listOf(createBackButton(Back.BACK_TO_CHOOSE_TIME))
 
-        bot.sendMessage(
+        sendReplaceableMessage(
+            bot = bot,
+            tgUser = callbackQuery.from,
             chatId = chatId,
             text = stringResources.getMessageForConfirmation(
                 serviceName = state.service!!.getDisplayName(),
@@ -284,7 +308,9 @@ class RoundBot {
         var state = stateService.getUserState(user)
         if (state == null || !stateService.isFilled(state)) {
             stateService.clearState(user)
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -312,7 +338,9 @@ class RoundBot {
             val totalPrice = service.getDisplayPrice()
             val durationInMinutes = service.duration
 
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getConfirmedMessage(
                     serviceName = serviceName,
@@ -321,7 +349,8 @@ class RoundBot {
                     totalPrice = totalPrice,
                     durationInMinutes = durationInMinutes
                 ),
-                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
+                replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
+                keepMessage = true
             )
             sendAppointmentAdminNotification(
                 bot = bot,
@@ -334,11 +363,13 @@ class RoundBot {
             )
             if (user.phone.isNullOrBlank()) {
                 LOGGER.info("Requesting phone number")
-                requestPhoneNumber(bot, chatId)
+                requestPhoneNumber(bot, callbackQuery.from, chatId)
             }
         } catch (e: AlreadyExistException) {
             LOGGER.warn("Time is already taken!")
-            bot.sendMessage(
+            sendPersistentMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getTimeIsAlreadyTakenMessage(VISIBLE_TIME_FORMATTER.format(startTime))
             )
@@ -347,7 +378,9 @@ class RoundBot {
         } catch (e: Exception) {
             LOGGER.error("Error!", e)
             stateService.clearState(user)
-            bot.sendMessage(
+            sendReplaceableMessage(
+                bot = bot,
+                tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getErrorMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -355,8 +388,10 @@ class RoundBot {
         }
     }
 
-    private fun requestPhoneNumber(bot: Bot, chatId: Long) {
-        bot.sendMessage(
+    private fun requestPhoneNumber(bot: Bot, tgUser: User, chatId: Long) {
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getRequestPhoneNumberMessage(),
             replyMarkup = KeyboardReplyMarkup(
@@ -370,17 +405,18 @@ class RoundBot {
         )
     }
 
-    private fun handlePhoneShared(bot: Bot, user: User, chatId: Long, contact: Contact) {
-        val userInDb = userService.getOrCreate(user, chatId)
-        val withPhone = userInDb.copy(phone = contact.phoneNumber)
-        userService.update(withPhone)
-        LOGGER.info("Added phone number for user with ID ${withPhone.id}")
-        bot.sendMessage(
+    private fun handlePhoneShared(bot: Bot, tgUser: User, chatId: Long, contact: Contact) {
+        val user = userService.getOrCreate(tgUser, chatId).copy(phone = contact.phoneNumber)
+        userService.update(user)
+        LOGGER.info("Added phone number for user ${user.getLogInfo()}")
+        sendReplaceableMessage(
+            bot = bot,
+            tgUser = tgUser,
             chatId = chatId,
             text = stringResources.getRequestPhoneSuccessMessage(),
             replyMarkup = ReplyKeyboardRemove()
         )
-        sendPhoneSharedAdminNotification(bot, withPhone)
+        sendPhoneSharedAdminNotification(bot, user)
     }
 
     private fun createBackButton(back: Back): List<InlineKeyboardButton> {
@@ -391,7 +427,7 @@ class RoundBot {
 
     private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
         val back = BackCallbackHandler.convertFromCallbackData(callbackQuery.data)
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id //ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         LOGGER.info("Go back: $back from user ${user.id}")
         var state = stateService.getUserState(user)
@@ -410,7 +446,9 @@ class RoundBot {
                 if (service == null) {
                     LOGGER.warn("Service is null!")
                     stateService.clearState(user)
-                    bot.sendMessage(
+                    sendReplaceableMessage(
+                        bot = bot,
+                        tgUser = callbackQuery.from,
                         chatId = chatId,
                         text = stringResources.getErrorMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -424,7 +462,9 @@ class RoundBot {
                 if (day == null) {
                     LOGGER.warn("Day is null!")
                     stateService.clearState(user)
-                    bot.sendMessage(
+                    sendReplaceableMessage(
+                        bot = bot,
+                        tgUser = callbackQuery.from,
                         chatId = chatId,
                         text = stringResources.getErrorMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton())
@@ -440,7 +480,7 @@ class RoundBot {
         val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
-        sendInitialMessage(bot, chatId)
+        sendMessageWithServicesList(bot, callbackQuery.from, chatId)
     }
 
     private fun createGoToBeginningButton(): InlineKeyboardButton {
@@ -497,6 +537,72 @@ class RoundBot {
                 text = text
             )
         }
+    }
+
+    private fun sendReplaceableMessage(
+        bot: Bot,
+        tgUser: User,
+        chatId: Long,
+        text: String,
+        replyMarkup: ReplyMarkup? = null,
+        keepMessage: Boolean = false // pass true if you want to prevent replacing this message in future
+    ) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        LOGGER.info("Send replaceable message called! User = ${user.getLogInfo()}, text=$text, keepMessage=$keepMessage")
+        if (user.replaceableMessageId == null) {
+            val msgId = sendNewMessageInternal(bot, user, text, replyMarkup)
+            if (msgId != null && !keepMessage) {
+                LOGGER.info("Updating replaceable message ID for user ${user.getLogInfo()}")
+                val copy = user.copy(replaceableMessageId = msgId)
+                userService.update(copy)
+            }
+            return
+        }
+
+        val res = bot.editMessageText(
+            chatId = user.chatId,
+            messageId = user.replaceableMessageId,
+            text = text,
+            replyMarkup = replyMarkup
+        )
+
+        if (res.first?.isSuccessful != true) {
+            val msgId = sendNewMessageInternal(bot, user, text, replyMarkup)
+            if (msgId != null && !keepMessage) {
+                userService.update(user.copy(replaceableMessageId = msgId))
+            }
+        }
+
+        if (keepMessage) {
+            userService.update(user.copy(replaceableMessageId = null))
+        }
+    }
+
+    private fun sendPersistentMessage(
+        bot: Bot,
+        tgUser: User,
+        chatId: Long,
+        text: String,
+        replyMarkup: ReplyMarkup? = null
+    ) {
+        val user = userService.getOrCreate(tgUser, chatId)
+        sendNewMessageInternal(bot, user, text, replyMarkup)
+        // Reset replaceableMessageId to continue conversation below current message
+        userService.update(user.copy(replaceableMessageId = null))
+    }
+
+    private fun sendNewMessageInternal(
+        bot: Bot,
+        user: ru.round.shave.entity.User,
+        text: String,
+        replyMarkup: ReplyMarkup? = null
+    ): Long? {
+        val response = bot.sendMessage(
+            chatId = user.chatId,
+            text = text,
+            replyMarkup = replyMarkup
+        )
+        return response.first?.body()?.result?.messageId
     }
 
     companion object {

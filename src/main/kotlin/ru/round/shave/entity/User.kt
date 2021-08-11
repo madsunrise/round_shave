@@ -30,6 +30,9 @@ data class User(
     @Column(name = "phone", nullable = true, length = 16)
     val phone: String?,
 
+    @Column(name = "replaceable_message_id", nullable = true)
+    val replaceableMessageId: Long?,
+
     @Column(name = "language_code", nullable = true, length = 10)
     val languageCode: String?,
 
@@ -50,6 +53,7 @@ data class User(
         lastName = null,
         username = null,
         phone = null,
+        replaceableMessageId = null,
         languageCode = null,
         canJoinGroups = null,
         canReadAllGroupMessages = null,
@@ -58,6 +62,25 @@ data class User(
 
     override fun toString(): String {
         return "User(id=$id, chatId=$chatId, isBot=$isBot, firstName='$firstName', lastName=$lastName, " +
-                "username=$username, phone=$phone, languageCode=$languageCode)"
+                "username=$username, phone=$phone, replaceableMessageId=$replaceableMessageId, languageCode=$languageCode)"
+    }
+
+    fun getLogInfo(): String {
+        val sb = StringBuilder(firstName)
+        if (!lastName.isNullOrBlank()) {
+            sb.append(' ')
+            sb.append(lastName)
+        }
+
+        sb.append(' ')
+        sb.append(id)
+
+        if (!username.isNullOrBlank()) {
+            sb.append(" (@")
+            sb.append(username)
+            sb.append(')')
+        }
+
+        return sb.toString()
     }
 }
