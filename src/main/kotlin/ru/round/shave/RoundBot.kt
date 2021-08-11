@@ -72,6 +72,24 @@ class RoundBot {
                     }
                 })
 
+                command(Command.PRICE_LIST.key, body = object : CommandHandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
+                        LOGGER.info("Handle price list command")
+                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
+                        val tgUser = p2.message!!.from!!
+                        sendPriceList(bot, tgUser, chatId)
+                    }
+                })
+
+                command(Command.MY_APPOINTMENTS.key, body = object : CommandHandleUpdate {
+                    override fun invoke(bot: Bot, p2: Update, p3: List<String>) {
+                        LOGGER.info("Handle my appointments command")
+                        val chatId = p2.message!!.chat.id //ChatId.fromId(message.chat.id)
+                        val tgUser = p2.message!!.from!!
+                        // TODO
+                    }
+                })
+
                 callbackQuery(data = CALLBACK_DATA_RESET, body = object : HandleUpdate {
                     override fun invoke(bot: Bot, p2: Update) {
                         resetEverything(bot, p2.callbackQuery!!)
@@ -152,6 +170,16 @@ class RoundBot {
             chatId = chatId,
             text = stringResources.getChooseServiceTypeMessage(),
             replyMarkup = createChooseServiceKeyboard()
+        )
+    }
+
+    private fun sendPriceList(bot: Bot, tgUser: User, chatId: Long) {
+        val text = serviceService.getAll().map { it.getDisplayNameWithPrice() }.joinToString("\n")
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = text
         )
     }
 
