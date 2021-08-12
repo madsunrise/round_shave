@@ -944,7 +944,7 @@ class RoundBot {
         keepMessage: Boolean // pass true if you want to prevent replacing this message in future
     ) {
         val user = userService.getOrCreate(tgUser, chatId)
-        LOGGER.info("Send replaceable message! User = ${user.getLogInfo()}, text=$text, keepMessage=$keepMessage")
+        LOGGER.info("Send replaceable message! User = ${user.getLogInfo()}, text = $text, keepMessage=$keepMessage")
 
         if (user.replaceableMessageId == null) {
             if (clearLastMessageReplyMarkup) {
@@ -998,7 +998,7 @@ class RoundBot {
         sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
         // Reset replaceableMessageId to continue conversation below current message
         val user = userService.getOrCreate(tgUser, chatId)
-        LOGGER.info("Send persistent message! User = ${user.getLogInfo()}, text=$text")
+        LOGGER.info("Send persistent message! User = ${user.getLogInfo()}, text = $text")
         userService.update(user.copy(replaceableMessageId = null))
     }
 
