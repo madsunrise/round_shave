@@ -248,13 +248,16 @@ class RoundBot {
     }
 
     private fun sendPriceList(bot: Bot, tgUser: User, chatId: Long) {
-        val text = serviceService.getAll().joinToString("\n") { it.getDisplayNameWithPrice() }
+        val text = serviceService.getAll().joinToString("\n") {
+            "${it.getDisplayName()} *${it.getDisplayPrice()}*"
+        }
         sendPersistentMessage(
             bot = bot,
             tgUser = tgUser,
             chatId = chatId,
             text = text,
-            clearLastMessageReplyMarkup = true
+            clearLastMessageReplyMarkup = true,
+            parseMode = ParseMode.MARKDOWN
         )
     }
 
@@ -941,7 +944,8 @@ class RoundBot {
         text: String,
         replyMarkup: ReplyMarkup? = null,
         clearLastMessageReplyMarkup: Boolean,
-        keepMessage: Boolean // pass true if you want to prevent replacing this message in future
+        keepMessage: Boolean, // pass true if you want to prevent replacing this message in future
+        parseMode: ParseMode? = null
     ) {
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Send replaceable message! User = ${user.getLogInfo()}, text = $text, keepMessage=$keepMessage")
@@ -950,7 +954,7 @@ class RoundBot {
             if (clearLastMessageReplyMarkup) {
                 clearLastMessageReplyMarkup(bot, tgUser, chatId)
             }
-            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
+            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
             if (msgId != null && !keepMessage) {
                 updateReplaceableMessageId(tgUser, chatId, msgId)
             }
@@ -968,7 +972,7 @@ class RoundBot {
             if (clearLastMessageReplyMarkup) {
                 clearLastMessageReplyMarkup(bot, tgUser, chatId)
             }
-            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
+            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
             if (msgId != null && !keepMessage) {
                 updateReplaceableMessageId(tgUser, chatId, msgId)
             }
@@ -990,12 +994,13 @@ class RoundBot {
         chatId: Long,
         text: String,
         clearLastMessageReplyMarkup: Boolean,
-        replyMarkup: ReplyMarkup? = null
+        replyMarkup: ReplyMarkup? = null,
+        parseMode: ParseMode? = null
     ) {
         if (clearLastMessageReplyMarkup) {
             clearLastMessageReplyMarkup(bot, tgUser, chatId)
         }
-        sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup)
+        sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
         // Reset replaceableMessageId to continue conversation below current message
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Send persistent message! User = ${user.getLogInfo()}, text = $text")
@@ -1007,11 +1012,13 @@ class RoundBot {
         tgUser: User,
         chatId: Long,
         text: String,
-        replyMarkup: ReplyMarkup? = null
+        replyMarkup: ReplyMarkup? = null,
+        parseMode: ParseMode? = null
     ): Long? {
         val response = bot.sendMessage(
             chatId = chatId,
             text = text,
+            parseMode = parseMode,
             replyMarkup = replyMarkup
         )
         val messageId = response.first?.body()?.result?.messageId
