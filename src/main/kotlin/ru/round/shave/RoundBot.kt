@@ -1069,7 +1069,7 @@ class RoundBot {
 
         private const val DAYS_PER_ROW = 4
 
-        private val DEVELOPER_USER_ID = 225893185L
-        private val ADMIN_USER_IDS = arrayOf(DEVELOPER_USER_ID)
+        private const val DEVELOPER_USER_ID = 225893185L
+        private val ADMIN_USER_IDS = arrayOf(DEVELOPER_USER_ID, 1661635722L)
     }
 }
