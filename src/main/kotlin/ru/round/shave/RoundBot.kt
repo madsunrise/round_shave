@@ -188,7 +188,9 @@ class RoundBot {
                         LOGGER.info("Received text: $text. Sending help.")
                         val chatId = update.message!!.chat.id
                         val tgUser = update.message!!.from!!
-                        sendHelpMessage(bot, tgUser, chatId)
+                        if (!isAdmin(tgUser.id)) {
+                            sendHelpMessage(bot, tgUser, chatId)
+                        }
                     }
                 }
 
