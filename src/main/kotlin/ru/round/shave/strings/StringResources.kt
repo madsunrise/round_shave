@@ -110,4 +110,8 @@ interface StringResources {
     ): String
 
     fun getRemindBeforeTwoHoursText(time: String, serviceName: String): String
+
+    fun getMasterContacts(): String
+
+    fun getSendLocationButtonText(): String
 }

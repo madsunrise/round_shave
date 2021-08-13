@@ -174,6 +174,7 @@ object RussianStringResources : StringResources {
             Command.NEW_APPOINTMENT -> "Записаться на стрижку"
             Command.PRICE_LIST -> "Посмотреть цены"
             Command.MY_APPOINTMENTS -> "Мои записи"
+            Command.MASTER_CONTACTS -> "Контакты мастера"
         }
     }
 
@@ -268,5 +269,21 @@ object RussianStringResources : StringResources {
             "Если у вас не получается приехать, то вы можете отменить запись в " +
                     "разделе \"Мои записи\" (/${Command.MY_APPOINTMENTS.key})."
         ).joinToString(separator = "\n")
+    }
+
+    override fun getMasterContacts(): String {
+        return mutableListOf(
+            "Александр",
+            "--",
+            "Телефон: +7(915)260-52-42",
+            "WhatsApp: wa.me/79152605242",
+            "Telegram: @round_shave",
+            "--",
+            "Адрес: $address"
+        ).joinToString(separator = "\n")
+    }
+
+    override fun getSendLocationButtonText(): String {
+        return "Локация"
     }
 }

@@ -102,8 +102,21 @@ class RoundBot {
                     }
                 }
 
+                command(Command.MASTER_CONTACTS.key) { bot, update ->
+                    LOGGER.info("Handle master contacts command")
+                    try {
+                        val chatId = update.message!!.chat.id
+                        val tgUser = update.message!!.from!!
+                        sendMessageWithMasterContacts(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
+                }
+
                 callbackQuery(data = CALLBACK_DATA_RESET) { bot, update ->
                     try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         resetEverything(bot, update.callbackQuery!!)
                     } catch (t: Throwable) {
                         LOGGER.error("Error occurred!", t)
@@ -113,6 +126,7 @@ class RoundBot {
 
                 callbackQuery(data = CALLBACK_DATA_CONFIRM) { bot, update ->
                     try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         handleConfirm(bot, update.callbackQuery!!)
                     } catch (t: Throwable) {
                         LOGGER.error("Error occurred!", t)
@@ -122,6 +136,7 @@ class RoundBot {
 
                 callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_PAST) { bot, update ->
                     try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         val chatId = update.callbackQuery!!.message!!.chat.id
                         val tgUser = update.callbackQuery!!.from
                         sendAppointmentsInPastMessage(bot, tgUser, chatId)
@@ -133,9 +148,24 @@ class RoundBot {
 
                 callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE) { bot, update ->
                     try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         val chatId = update.callbackQuery!!.message!!.chat.id
                         val tgUser = update.callbackQuery!!.from
                         sendAppointmentsInFutureMessage(bot, tgUser, chatId)
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
+                }
+
+                callbackQuery(data = CALLBACK_DATA_SEND_LOCATION) { bot, update ->
+                    try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
+                        val chatId = update.callbackQuery!!.message!!.chat.id
+                        val tgUser = update.callbackQuery!!.from
+                        // clear button "Location"
+                        clearLastMessageReplyMarkup(bot, tgUser, chatId)
+                        sendLocation(chatId)
                     } catch (t: Throwable) {
                         LOGGER.error("Error occurred!", t)
                         sendErrorToDeveloper(bot, t.message ?: "unknown")
@@ -950,7 +980,8 @@ class RoundBot {
         replyMarkup: ReplyMarkup? = null,
         clearLastMessageReplyMarkup: Boolean,
         keepMessage: Boolean, // pass true if you want to prevent replacing this message in future
-        parseMode: ParseMode? = null
+        parseMode: ParseMode? = null,
+        disableWebPagePreview: Boolean? = null
     ) {
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Send replaceable message! User = ${user.getLogInfo()}, text = $text, keepMessage=$keepMessage")
@@ -959,7 +990,15 @@ class RoundBot {
             if (clearLastMessageReplyMarkup) {
                 clearLastMessageReplyMarkup(bot, tgUser, chatId)
             }
-            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
+            val msgId = sendNewMessageInternal(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = text,
+                replyMarkup = replyMarkup,
+                parseMode = parseMode,
+                disableWebPagePreview = disableWebPagePreview
+            )
             if (msgId != null && !keepMessage) {
                 updateReplaceableMessageId(tgUser, chatId, msgId)
             }
@@ -977,7 +1016,15 @@ class RoundBot {
             if (clearLastMessageReplyMarkup) {
                 clearLastMessageReplyMarkup(bot, tgUser, chatId)
             }
-            val msgId = sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
+            val msgId = sendNewMessageInternal(
+                bot = bot,
+                tgUser = tgUser,
+                chatId = chatId,
+                text = text,
+                replyMarkup = replyMarkup,
+                parseMode = parseMode,
+                disableWebPagePreview = disableWebPagePreview
+            )
             if (msgId != null && !keepMessage) {
                 updateReplaceableMessageId(tgUser, chatId, msgId)
             }
@@ -1000,12 +1047,21 @@ class RoundBot {
         text: String,
         clearLastMessageReplyMarkup: Boolean,
         replyMarkup: ReplyMarkup? = null,
-        parseMode: ParseMode? = null
+        parseMode: ParseMode? = null,
+        disableWebPagePreview: Boolean? = null
     ) {
         if (clearLastMessageReplyMarkup) {
             clearLastMessageReplyMarkup(bot, tgUser, chatId)
         }
-        sendNewMessageInternal(bot, tgUser, chatId, text, replyMarkup, parseMode)
+        sendNewMessageInternal(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = text,
+            replyMarkup = replyMarkup,
+            parseMode = parseMode,
+            disableWebPagePreview = disableWebPagePreview
+        )
         // Reset replaceableMessageId to continue conversation below current message
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Send persistent message! User = ${user.getLogInfo()}, text = $text")
@@ -1017,14 +1073,16 @@ class RoundBot {
         tgUser: User,
         chatId: Long,
         text: String,
-        replyMarkup: ReplyMarkup? = null,
-        parseMode: ParseMode? = null
+        replyMarkup: ReplyMarkup?,
+        parseMode: ParseMode?,
+        disableWebPagePreview: Boolean?
     ): Long? {
         val response = bot.sendMessage(
             chatId = chatId,
             text = text,
             parseMode = parseMode,
-            replyMarkup = replyMarkup
+            replyMarkup = replyMarkup,
+            disableWebPagePreview = disableWebPagePreview
         )
         val messageId = response.first?.body()?.result?.messageId
         if (messageId != null) {
@@ -1049,6 +1107,7 @@ class RoundBot {
     }
 
     fun sendLocation(chatId: Long) {
+        LOGGER.info("Sending location to chat $chatId")
         bot.sendLocation(
             chatId = chatId,
             latitude = LATITUDE,
@@ -1080,6 +1139,23 @@ class RoundBot {
         )
     }
 
+    private fun sendMessageWithMasterContacts(bot: Bot, tgUser: User, chatId: Long) {
+        val locationButton = InlineKeyboardButton(
+            text = stringResources.getSendLocationButtonText(),
+            callbackData = CALLBACK_DATA_SEND_LOCATION
+        )
+        val replyMarkup = InlineKeyboardMarkup.createSingleButton(locationButton)
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = stringResources.getMasterContacts(),
+            clearLastMessageReplyMarkup = true,
+            replyMarkup = replyMarkup,
+            disableWebPagePreview = true
+        )
+    }
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
         private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
@@ -1093,6 +1169,7 @@ class RoundBot {
         private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_PAST = "appointments_in_past"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_FUTURE = "appointments_in_future"
+        private const val CALLBACK_DATA_SEND_LOCATION = "callback_data_send_location"
 
         private const val DAYS_PER_ROW = 4
 

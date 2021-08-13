@@ -4,7 +4,8 @@ enum class Command(val key: String) {
     START("start"),
     NEW_APPOINTMENT("new"),
     PRICE_LIST("prices"),
-    MY_APPOINTMENTS("appointments");
+    MY_APPOINTMENTS("appointments"),
+    MASTER_CONTACTS("contacts");
 
     companion object {
         fun findCommand(textCommand: String): Command? {
