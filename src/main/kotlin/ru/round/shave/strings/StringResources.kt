@@ -71,7 +71,13 @@ interface StringResources {
 
     fun getAppointmentsInFutureButtonText(): String
 
-    fun getNoAppointmentsFoundMessage(): String
+    fun getAppointmentsInPastMessage(): String
+
+    fun getAppointmentsInPastNotFoundMessage(): String
+
+    fun getAppointmentsInFutureMessage(): String
+
+    fun getAppointmentsInFutureNotFoundMessage(): String
 
     fun getAppointmentDescription(
         serviceName: String,

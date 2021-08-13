@@ -190,8 +190,20 @@ object RussianStringResources : StringResources {
         return "Предстоящие"
     }
 
-    override fun getNoAppointmentsFoundMessage(): String {
-        return "Записей нет"
+    override fun getAppointmentsInPastMessage(): String {
+        return "Прошедшие записи:"
+    }
+
+    override fun getAppointmentsInPastNotFoundMessage(): String {
+        return "Прошедших записей не найдено."
+    }
+
+    override fun getAppointmentsInFutureMessage(): String {
+        return "Предстоящие записи:"
+    }
+
+    override fun getAppointmentsInFutureNotFoundMessage(): String {
+        return "Предстоящих записей не найдено."
     }
 
     override fun getAppointmentDescription(serviceName: String, day: String, time: String, totalPrice: String): String {

@@ -328,7 +328,24 @@ class RoundBot {
             user = if (isAdmin(user.id)) null else user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
-        sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = false)
+        if (appointments.isEmpty()) {
+            sendPersistentMessage(
+                bot = bot,
+                chatId = chatId,
+                tgUser = tgUser,
+                text = stringResources.getAppointmentsInPastNotFoundMessage(),
+                clearLastMessageReplyMarkup = false,
+            )
+        } else {
+            sendPersistentMessage(
+                bot = bot,
+                chatId = chatId,
+                tgUser = tgUser,
+                text = stringResources.getAppointmentsInPastMessage(),
+                clearLastMessageReplyMarkup = false,
+            )
+            sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = false)
+        }
     }
 
     private fun sendAppointmentsInFutureMessage(bot: Bot, tgUser: User, chatId: Long) {
@@ -339,7 +356,24 @@ class RoundBot {
             user = if (isAdmin(user.id)) null else user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
         )
-        sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = true)
+        if (appointments.isEmpty()) {
+            sendPersistentMessage(
+                bot = bot,
+                chatId = chatId,
+                tgUser = tgUser,
+                text = stringResources.getAppointmentsInFutureNotFoundMessage(),
+                clearLastMessageReplyMarkup = false,
+            )
+        } else {
+            sendPersistentMessage(
+                bot = bot,
+                chatId = chatId,
+                tgUser = tgUser,
+                text = stringResources.getAppointmentsInFutureMessage(),
+                clearLastMessageReplyMarkup = false,
+            )
+            sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = true)
+        }
     }
 
     private fun sendMessageWithAppointments(
@@ -349,16 +383,6 @@ class RoundBot {
         appointments: List<Appointment>,
         addCancelButton: Boolean
     ) {
-        if (appointments.isEmpty()) {
-            sendPersistentMessage(
-                bot = bot,
-                tgUser = tgUser,
-                chatId = chatId,
-                text = stringResources.getNoAppointmentsFoundMessage(),
-                clearLastMessageReplyMarkup = false,
-            )
-            return
-        }
         for (appointment in appointments) {
             val service = appointment.services.first()
             val text = if (isAdmin(tgUser.id)) {
