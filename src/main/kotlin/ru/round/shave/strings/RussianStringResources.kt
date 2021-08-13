@@ -5,7 +5,7 @@ import ru.round.shave.entity.User
 
 object RussianStringResources : StringResources {
 
-    private val address: String = "2-я Магистральная ул., 3с3."
+    private const val address: String = "2-я Магистральная ул., 3с3."
 
     override fun getHelloMessage(): String {
         return "Вас приветствует Round Shave Bot!"
@@ -256,5 +256,17 @@ object RussianStringResources : StringResources {
         )
         list.addAll(constructUserInfoForAdmins(user))
         return list.joinToString(separator = "\n")
+    }
+
+    override fun getRemindBeforeTwoHoursText(time: String, serviceName: String): String {
+        return mutableListOf(
+            "Напоминание о записи.",
+            "--",
+            "Ждём вас в $time по адресу: $address.",
+            "Услуга: ${serviceName.replaceFirstChar { it.lowercase() }}",
+            "--",
+            "Если у вас не получается приехать, то вы можете отменить запись в " +
+                    "разделе \"Мои записи\" (/${Command.MY_APPOINTMENTS.key})."
+        ).joinToString(separator = "\n")
     }
 }

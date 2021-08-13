@@ -8,6 +8,8 @@ import java.time.LocalDateTime
 interface AppointmentDao : CommonDao<Appointment> {
     fun getAll(day: LocalDate, orderBy: OrderBy): List<Appointment>
 
+    fun getByStartTime(startTime: LocalDateTime): Appointment?
+
     fun getAppointmentsInPast(currentTime: LocalDateTime, user: User?, orderBy: OrderBy): List<Appointment>
 
     fun getAppointmentsInFuture(currentTime: LocalDateTime, user: User?, orderBy: OrderBy): List<Appointment>

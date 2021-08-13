@@ -37,6 +37,10 @@ open class AppointmentServiceImpl : AppointmentService {
         return appointmentDao.getAll(day, mapOrderBy(orderBy))
     }
 
+    override fun getByStartTime(startTime: LocalDateTime): Appointment? {
+        return appointmentDao.getByStartTime(startTime)
+    }
+
     override fun getAppointmentsInPast(
         currentTime: LocalDateTime,
         user: User?,

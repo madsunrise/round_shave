@@ -66,6 +66,21 @@ class AppointmentDaoImpl : AppointmentDao {
         return em.createQuery(afterOrderBy).resultList
     }
 
+    override fun getByStartTime(startTime: LocalDateTime): Appointment? {
+        val cb = em.criteriaBuilder
+        val query = cb.createQuery(Appointment::class.java)
+        val root = query.from(Appointment::class.java)
+
+        val predicates = mutableListOf<Predicate>()
+        predicates.add(cb.equal(root.get<LocalDateTime>("startTime"), startTime))
+
+        query
+            .select(root)
+            .where(*predicates.toTypedArray())
+
+        return em.createQuery(query).resultList.firstOrNull()
+    }
+
     override fun getAppointmentsInPast(
         currentTime: LocalDateTime,
         user: User?,

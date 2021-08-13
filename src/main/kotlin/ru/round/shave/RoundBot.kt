@@ -45,9 +45,11 @@ class RoundBot {
 
     private val stringResources: StringResources = RussianStringResources
 
+    private lateinit var bot: Bot
+
     @PostConstruct
     fun run() {
-        bot {
+        bot = bot {
             logLevel = HttpLoggingInterceptor.Level.BODY
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
@@ -199,7 +201,8 @@ class RoundBot {
                     sendErrorToDeveloper(bot, telegramError.getErrorMessage())
                 }
             }
-        }.startPolling()
+        }
+        bot.startPolling()
     }
 
     private fun sendHelloMessage(bot: Bot, tgUser: User, chatId: Long) {
@@ -1038,6 +1041,21 @@ class RoundBot {
         }
     }
 
+    fun sendMessageByChatId(chatId: Long, text: String) {
+        bot.sendMessage(
+            chatId = chatId,
+            text = text
+        )
+    }
+
+    fun sendLocation(chatId: Long) {
+        bot.sendLocation(
+            chatId = chatId,
+            latitude = LATITUDE,
+            longitude = LONGITUDE
+        )
+    }
+
     private fun getUserCurrentTime(): LocalDateTime {
         return LocalDateTime.now(TIME_ZONE)
     }
@@ -1069,7 +1087,7 @@ class RoundBot {
 
         private val VISIBLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM")
         private val VISIBLE_DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        private val VISIBLE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
+        val VISIBLE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
 
         private const val CALLBACK_DATA_RESET = "callback_data_reset"
         private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"
@@ -1080,5 +1098,8 @@ class RoundBot {
 
         private const val DEVELOPER_USER_ID = 225893185L
         private val ADMIN_USER_IDS = arrayOf(DEVELOPER_USER_ID, 1661635722L)
+
+        private const val LATITUDE = 55.762316f
+        private const val LONGITUDE = 37.530532f
     }
 }

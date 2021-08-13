@@ -109,4 +109,5 @@ interface StringResources {
         user: User
     ): String
 
+    fun getRemindBeforeTwoHoursText(time: String, serviceName: String): String
 }
