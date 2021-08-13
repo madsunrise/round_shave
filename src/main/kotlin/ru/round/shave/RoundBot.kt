@@ -50,7 +50,7 @@ class RoundBot {
     @PostConstruct
     fun run() {
         bot = bot {
-            logLevel = HttpLoggingInterceptor.Level.BODY
+            logLevel = HttpLoggingInterceptor.Level.NONE
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
                 command(Command.START.key) { bot, update ->
