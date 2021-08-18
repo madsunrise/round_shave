@@ -285,11 +285,11 @@ object RussianStringResources : StringResources {
 
     override fun getMasterContacts(): String {
         return mutableListOf(
-            "Александр",
+            MasterInfo.name,
             "--",
-            "Телефон: +7(915)260-52-42",
-            "WhatsApp: wa.me/79152605242",
-            "Telegram: @round_shave",
+            "Телефон: ${MasterInfo.phone}",
+            "WhatsApp: ${MasterInfo.whatsapp}",
+            "Telegram: ${MasterInfo.telegram}",
             "--",
             "Адрес: $address"
         ).joinToString(separator = "\n")
