@@ -206,11 +206,18 @@ object RussianStringResources : StringResources {
         return "Предстоящих записей не найдено."
     }
 
-    override fun getAppointmentDescription(serviceName: String, day: String, time: String, totalPrice: String): String {
+    override fun getAppointmentDescription(
+        serviceName: String,
+        day: String,
+        time: String,
+        totalPrice: String,
+        durationInMinutes: Int
+    ): String {
         return mutableListOf(
             serviceName,
             "$day в $time",
-            "Стоимость: $totalPrice"
+            "Стоимость: $totalPrice",
+            "Длительность: $durationInMinutes мин.",
         ).joinToString(separator = "\n")
     }
 
@@ -219,12 +226,14 @@ object RussianStringResources : StringResources {
         day: String,
         time: String,
         totalPrice: String,
+        durationInMinutes: Int,
         user: User
     ): String {
         val list = mutableListOf(
             serviceName,
             "$day в $time",
             "Стоимость: $totalPrice",
+            "Длительность: $durationInMinutes мин.",
             "--"
         )
         list.addAll(constructUserInfoForAdmins(user))

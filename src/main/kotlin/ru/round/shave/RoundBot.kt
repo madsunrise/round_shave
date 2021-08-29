@@ -391,6 +391,7 @@ class RoundBot {
                     day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
                     time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
                     totalPrice = service.getDisplayPrice(),
+                    durationInMinutes = service.duration,
                     user = appointment.user
                 )
             } else {
@@ -398,7 +399,8 @@ class RoundBot {
                     serviceName = service.getDisplayName(),
                     day = appointment.startTime.format(VISIBLE_DATE_FORMATTER_FULL),
                     time = appointment.startTime.format(VISIBLE_TIME_FORMATTER),
-                    totalPrice = service.getDisplayPrice()
+                    totalPrice = service.getDisplayPrice(),
+                    durationInMinutes = service.duration,
                 )
             }
             val showCancelButton = addCancelButton && (!isAdmin(tgUser.id) || tgUser.id == appointment.user.id)

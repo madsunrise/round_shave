@@ -83,7 +83,8 @@ interface StringResources {
         serviceName: String,
         day: String,
         time: String,
-        totalPrice: String
+        totalPrice: String,
+        durationInMinutes: Int
     ): String
 
     fun getAppointmentDescriptionForAdmin(
@@ -91,6 +92,7 @@ interface StringResources {
         day: String,
         time: String,
         totalPrice: String,
+        durationInMinutes: Int,
         user: User
     ): String
 
