@@ -930,6 +930,10 @@ class RoundBot {
         durationInMinutes: Int,
         user: ru.round.shave.entity.User
     ) {
+        if (isAdmin(user.id)) {
+            return
+        }
+
         val admins = getAdminUsers()
         if (admins.isEmpty()) {
             LOGGER.warn("No admins found!")
@@ -958,6 +962,10 @@ class RoundBot {
         time: String,
         user: ru.round.shave.entity.User
     ) {
+        if (isAdmin(user.id)) {
+            return
+        }
+
         val admins = getAdminUsers()
         if (admins.isEmpty()) {
             LOGGER.warn("No admins found!")
@@ -982,6 +990,10 @@ class RoundBot {
         bot: Bot,
         user: ru.round.shave.entity.User
     ) {
+        if (isAdmin(user.id)) {
+            return
+        }
+
         val admins = getAdminUsers()
         if (admins.isEmpty()) {
             LOGGER.warn("No admins found!")
