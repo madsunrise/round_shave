@@ -305,6 +305,6 @@ object RussianStringResources : StringResources {
     }
 
     override fun getSendLocationButtonText(): String {
-        return "Локация"
+        return "Маршрут"
     }
 }
