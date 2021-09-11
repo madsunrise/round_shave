@@ -5,7 +5,9 @@ import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.*
 import com.github.kotlintelegrambot.entities.*
-import okhttp3.logging.HttpLoggingInterceptor
+import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
+import com.github.kotlintelegrambot.entities.keyboard.KeyboardButton
+import com.github.kotlintelegrambot.logging.LogLevel
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -50,10 +52,10 @@ class RoundBot {
     @PostConstruct
     fun run() {
         bot = bot {
-            logLevel = HttpLoggingInterceptor.Level.NONE
+            logLevel = LogLevel.None
             token = System.getenv(TOKEN_ENVIRONMENT_VARIABLE)
             dispatch {
-                command(Command.START.key) { bot, update ->
+                command(Command.START.key) {
                     LOGGER.info("Handle start command")
                     try {
                         val chatId = update.message!!.chat.id
@@ -66,7 +68,7 @@ class RoundBot {
                     }
                 }
 
-                command(Command.NEW_APPOINTMENT.key) { bot, update ->
+                command(Command.NEW_APPOINTMENT.key) {
                     LOGGER.info("Handle new appointment command")
                     try {
                         val chatId = update.message!!.chat.id
@@ -78,7 +80,7 @@ class RoundBot {
                     }
                 }
 
-                command(Command.PRICE_LIST.key) { bot, update ->
+                command(Command.PRICE_LIST.key) {
                     LOGGER.info("Handle price list command")
                     try {
                         val chatId = update.message!!.chat.id
@@ -90,7 +92,7 @@ class RoundBot {
                     }
                 }
 
-                command(Command.MY_APPOINTMENTS.key) { bot, update ->
+                command(Command.MY_APPOINTMENTS.key) {
                     LOGGER.info("Handle my appointments command")
                     try {
                         val chatId = update.message!!.chat.id
@@ -102,7 +104,7 @@ class RoundBot {
                     }
                 }
 
-                command(Command.MASTER_CONTACTS.key) { bot, update ->
+                command(Command.MASTER_CONTACTS.key) {
                     LOGGER.info("Handle master contacts command")
                     try {
                         val chatId = update.message!!.chat.id
@@ -114,7 +116,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery(data = CALLBACK_DATA_RESET) { bot, update ->
+                callbackQuery(data = CALLBACK_DATA_RESET) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         resetEverything(bot, update.callbackQuery!!)
@@ -124,7 +126,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery(data = CALLBACK_DATA_CONFIRM) { bot, update ->
+                callbackQuery(data = CALLBACK_DATA_CONFIRM) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         handleConfirm(bot, update.callbackQuery!!)
@@ -134,7 +136,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_PAST) { bot, update ->
+                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_PAST) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         val chatId = update.callbackQuery!!.message!!.chat.id
@@ -146,7 +148,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE) { bot, update ->
+                callbackQuery(data = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         val chatId = update.callbackQuery!!.message!!.chat.id
@@ -158,7 +160,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery(data = CALLBACK_DATA_SEND_LOCATION) { bot, update ->
+                callbackQuery(data = CALLBACK_DATA_SEND_LOCATION) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
                         val chatId = update.callbackQuery!!.message!!.chat.id
@@ -172,7 +174,7 @@ class RoundBot {
                     }
                 }
 
-                contact { bot, update, contact ->
+                contact {
                     LOGGER.info("Handle contact callback: $contact")
                     try {
                         handlePhoneShared(bot, update.message!!.from!!, update.message!!.chat.id, contact)
@@ -182,7 +184,7 @@ class RoundBot {
                     }
                 }
 
-                callbackQuery { bot, update ->
+                callbackQuery {
                     try {
                         val callbackQuery = update.callbackQuery!!
                         val callbackData = callbackQuery.data
@@ -214,7 +216,7 @@ class RoundBot {
                     }
                 }
 
-                text { bot, update ->
+                text {
                     val text = update.message!!.text
                     if (!text.isNullOrBlank() && Command.findCommand(text) == null) {
                         LOGGER.info("Received text: $text. Sending help.")
@@ -226,9 +228,9 @@ class RoundBot {
                     }
                 }
 
-                telegramError { bot, telegramError ->
-                    LOGGER.error("Telegram error handled: $telegramError")
-                    sendErrorToDeveloper(bot, telegramError.getErrorMessage())
+                telegramError {
+                    LOGGER.error("Telegram error handled: $error")
+                    sendErrorToDeveloper(bot, error.getErrorMessage())
                 }
             }
         }
@@ -303,14 +305,14 @@ class RoundBot {
             chatId = chatId,
             text = stringResources.getChooseAppointmentTypeText(),
             clearLastMessageReplyMarkup = true,
-            replyMarkup = InlineKeyboardMarkup(
+            replyMarkup = InlineKeyboardMarkup.create(
                 listOf(
                     listOf(
-                        InlineKeyboardButton(
+                        InlineKeyboardButton.CallbackData(
                             text = stringResources.getAppointmentsInPastButtonText(),
                             callbackData = CALLBACK_DATA_APPOINTMENTS_IN_PAST
                         ),
-                        InlineKeyboardButton(
+                        InlineKeyboardButton.CallbackData(
                             text = stringResources.getAppointmentsInFutureButtonText(),
                             callbackData = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE
                         )
@@ -421,7 +423,7 @@ class RoundBot {
 
     private fun createCancelAppointmentButton(appointment: Appointment): InlineKeyboardButton {
         val data = CancelAppointmentCallbackHandler.convertToCallbackData(appointment.id)
-        return InlineKeyboardButton(
+        return InlineKeyboardButton.CallbackData(
             text = stringResources.getCancelAppointmentButtonText(),
             callbackData = data
         )
@@ -429,7 +431,7 @@ class RoundBot {
 
     private fun createCancelAppointmentConfirmButton(appointment: Appointment): InlineKeyboardButton {
         val data = CancelConfirmedAppointmentCallbackHandler.convertToCallbackData(appointment.id)
-        return InlineKeyboardButton(
+        return InlineKeyboardButton.CallbackData(
             text = stringResources.getCancelAppointmentConfirmButtonText(),
             callbackData = data
         )
@@ -502,7 +504,7 @@ class RoundBot {
     }
 
     private fun handleServiceChosen(bot: Bot, callbackQuery: CallbackQuery, service: Service) {
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
 
@@ -527,7 +529,7 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getChooseDayMessage(service.getDisplayName(), service.duration),
-                replyMarkup = InlineKeyboardMarkup(withBackButton),
+                replyMarkup = InlineKeyboardMarkup.create(withBackButton),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
             )
@@ -540,7 +542,7 @@ class RoundBot {
     }
 
     private fun handleDayChosen(bot: Bot, callbackQuery: CallbackQuery, day: LocalDate) {
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         val state = stateService.getUserState(user)
 
@@ -569,7 +571,7 @@ class RoundBot {
                 tgUser = callbackQuery.from,
                 chatId = chatId,
                 text = stringResources.getChosenDayIsUnavailableMessage(VISIBLE_DATE_FORMATTER_FULL.format(day)),
-                replyMarkup = InlineKeyboardMarkup(withBackButton),
+                replyMarkup = InlineKeyboardMarkup.create(withBackButton),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
             )
@@ -581,7 +583,7 @@ class RoundBot {
         val list = mutableListOf<InlineKeyboardButton>()
         for (slot in slots) {
             val callbackData = ChooseTimeCallbackHandler.convertToCallbackData(slot)
-            val button = InlineKeyboardButton(
+            val button = InlineKeyboardButton.CallbackData(
                 text = VISIBLE_TIME_FORMATTER.format(slot),
                 callbackData = callbackData
             )
@@ -602,14 +604,14 @@ class RoundBot {
                 serviceName = state.service.getDisplayName(),
                 VISIBLE_DATE_FORMATTER_FULL.format(day)
             ),
-            replyMarkup = InlineKeyboardMarkup(withBackButton),
+            replyMarkup = InlineKeyboardMarkup.create(withBackButton),
             clearLastMessageReplyMarkup = true,
             keepMessage = false
         )
     }
 
     private fun createStubButton(): InlineKeyboardButton {
-        return InlineKeyboardButton(text = " ", callbackData = createIgnoredCallbackData())
+        return InlineKeyboardButton.CallbackData(text = " ", callbackData = createIgnoredCallbackData())
     }
 
     private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery) {
@@ -618,7 +620,7 @@ class RoundBot {
     }
 
     private fun handleTimeChosen(bot: Bot, callbackQuery: CallbackQuery, time: LocalTime) {
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         var state = stateService.getUserState(user)
 
@@ -668,7 +670,7 @@ class RoundBot {
                 durationInMinutes = state.service!!.duration,
                 price = state.service!!.getDisplayPrice()
             ),
-            replyMarkup = InlineKeyboardMarkup(withBackButton),//InlineKeyboardMarkup.create(withBackButton)
+            replyMarkup = InlineKeyboardMarkup.create(withBackButton),
             clearLastMessageReplyMarkup = true,
             keepMessage = false
         )
@@ -677,11 +679,10 @@ class RoundBot {
     private fun createChooseServiceKeyboard(): ReplyMarkup {
         val buttons = serviceService.getAll().map {
             val callbackData = ChooseServiceCallbackHandler(serviceService).convertToCallbackData(it)
-            //InlineKeyboardButton.CallbackData(it.getDisplayNameWithPrice(), callbackData)
-            InlineKeyboardButton(text = it.getDisplayName(), callbackData = callbackData)
+            InlineKeyboardButton.CallbackData(text = it.getDisplayName(), callbackData = callbackData)
         }
         //return InlineKeyboardMarkup.create(buttons.map { listOf(it) })
-        return InlineKeyboardMarkup(buttons.map { listOf(it) })
+        return InlineKeyboardMarkup.create(buttons.map { listOf(it) })
     }
 
     private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton> {
@@ -690,15 +691,17 @@ class RoundBot {
         timeManagementService.getDaysThatHaveFreeWindows(daysAvailable, requiredDuration, getUserCurrentTime())
             .forEach { current ->
                 val callbackData = ChooseDateCallbackHandler.convertToCallbackData(current)
-                val button =
-                    InlineKeyboardButton(text = VISIBLE_DATE_FORMATTER.format(current), callbackData = callbackData)
+                val button = InlineKeyboardButton.CallbackData(
+                    text = VISIBLE_DATE_FORMATTER.format(current),
+                    callbackData = callbackData
+                )
                 list.add(button)
             }
         return list
     }
 
     private fun createConfirmKeyboard(): List<List<InlineKeyboardButton>> {
-        val confirmButton = InlineKeyboardButton(
+        val confirmButton = InlineKeyboardButton.CallbackData(
             text = stringResources.getConfirmButtonText(),
             callbackData = CALLBACK_DATA_CONFIRM
         )
@@ -707,7 +710,7 @@ class RoundBot {
     }
 
     private fun handleConfirm(bot: Bot, callbackQuery: CallbackQuery) {
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         var state = stateService.getUserState(user)
         if (state == null || !stateService.isFilled(state)) {
@@ -849,13 +852,17 @@ class RoundBot {
 
     private fun createBackButton(back: Back): List<InlineKeyboardButton> {
         val callback = BackCallbackHandler.convertToCallbackData(back)
-        //return listOf(InlineKeyboardButton.CallbackData(stringResources.getBackButtonText(), callback))
-        return listOf(InlineKeyboardButton(text = stringResources.getBackButtonText(), callbackData = callback))
+        return listOf(
+            InlineKeyboardButton.CallbackData(
+                text = stringResources.getBackButtonText(),
+                callbackData = callback
+            )
+        )
     }
 
     private fun goBack(bot: Bot, callbackQuery: CallbackQuery) {
         val back = BackCallbackHandler.convertFromCallbackData(callbackQuery.data)
-        val chatId = callbackQuery.message!!.chat.id //ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         LOGGER.info("Go back: $back from user ${user.id}")
         var state = stateService.getUserState(user)
@@ -909,15 +916,14 @@ class RoundBot {
     }
 
     private fun resetEverything(bot: Bot, callbackQuery: CallbackQuery) {
-        val chatId = callbackQuery.message!!.chat.id//ChatId.fromId(callbackQuery.message!!.chat.id)
+        val chatId = callbackQuery.message!!.chat.id
         val user = userService.getOrCreate(callbackQuery.from, chatId)
         stateService.clearState(user)
         suggestServicesForAppointment(bot, callbackQuery.from, chatId)
     }
 
     private fun createGoToBeginningButton(): InlineKeyboardButton {
-        //return InlineKeyboardButton.CallbackData(stringResources.getGoToBeginningButtonText(), CALLBACK_DATA_RESET)
-        return InlineKeyboardButton(
+        return InlineKeyboardButton.CallbackData(
             text = stringResources.getGoToBeginningButtonText(),
             callbackData = CALLBACK_DATA_RESET
         )
@@ -951,7 +957,7 @@ class RoundBot {
         )
         for (admin in admins) {
             bot.sendMessage(
-                chatId = admin.chatId,
+                chatId = ChatId.fromId(admin.chatId),
                 text = text
             )
         }
@@ -982,7 +988,7 @@ class RoundBot {
         )
         for (admin in admins) {
             bot.sendMessage(
-                chatId = admin.chatId,
+                chatId = ChatId.fromId(admin.chatId),
                 text = text
             )
         }
@@ -1004,7 +1010,7 @@ class RoundBot {
         val text = stringResources.getPhoneSharedAdminMessage(user = user)
         for (admin in admins) {
             bot.sendMessage(
-                chatId = admin.chatId,
+                chatId = ChatId.fromId(admin.chatId),
                 text = text
             )
         }
@@ -1044,7 +1050,7 @@ class RoundBot {
         }
 
         val res = bot.editMessageText(
-            chatId = user.chatId,
+            chatId = ChatId.fromId(user.chatId),
             messageId = user.replaceableMessageId,
             text = text,
             replyMarkup = replyMarkup
@@ -1116,7 +1122,7 @@ class RoundBot {
         disableWebPagePreview: Boolean?
     ): Long? {
         val response = bot.sendMessage(
-            chatId = chatId,
+            chatId = ChatId.fromId(chatId),
             text = text,
             parseMode = parseMode,
             replyMarkup = replyMarkup,
@@ -1133,13 +1139,17 @@ class RoundBot {
     private fun clearLastMessageReplyMarkup(bot: Bot, tgUser: User, chatId: Long) {
         val user = userService.getOrCreate(tgUser, chatId)
         if (user.lastMessageId != null) {
-            bot.editMessageReplyMarkup(chatId = chatId, messageId = user.lastMessageId, replyMarkup = null)
+            bot.editMessageReplyMarkup(
+                chatId = ChatId.fromId(chatId),
+                messageId = user.lastMessageId,
+                replyMarkup = null
+            )
         }
     }
 
     fun sendMessageByChatId(chatId: Long, text: String) {
         bot.sendMessage(
-            chatId = chatId,
+            chatId = ChatId.fromId(chatId),
             text = text
         )
     }
@@ -1147,7 +1157,7 @@ class RoundBot {
     fun sendLocation(chatId: Long) {
         LOGGER.info("Sending location to chat $chatId")
         bot.sendLocation(
-            chatId = chatId,
+            chatId = ChatId.fromId(chatId),
             latitude = LATITUDE,
             longitude = LONGITUDE
         )
@@ -1172,13 +1182,13 @@ class RoundBot {
     private fun sendErrorToDeveloper(bot: Bot, error: String) {
         val developer = userService.getById(DEVELOPER_USER_ID) ?: return
         bot.sendMessage(
-            chatId = developer.chatId,
+            chatId = ChatId.fromId(developer.chatId),
             text = "Achtung! $error"
         )
     }
 
     private fun sendMessageWithMasterContacts(bot: Bot, tgUser: User, chatId: Long) {
-        val locationButton = InlineKeyboardButton(
+        val locationButton = InlineKeyboardButton.CallbackData(
             text = stringResources.getSendLocationButtonText(),
             callbackData = CALLBACK_DATA_SEND_LOCATION
         )
@@ -1201,7 +1211,7 @@ class RoundBot {
 
         private val VISIBLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM")
         private val VISIBLE_DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        val VISIBLE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH.mm")
+        val VISIBLE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH.mm")
 
         private const val CALLBACK_DATA_RESET = "callback_data_reset"
         private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"

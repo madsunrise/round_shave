@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:5.0.0'
+    implementation 'io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.5'
     implementation "org.springframework.boot:spring-boot-starter-web:$spring_boot_version"
 
     // Database
