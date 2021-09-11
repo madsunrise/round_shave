@@ -1,6 +1,6 @@
 buildscript {
     ext.kotlin_version = "1.5.21"
-    ext.spring_boot_version = "2.5.3"
+    ext.spring_boot_version = '2.5.4'
     ext.spring_framework_version = "5.3.9"
 }
 
@@ -23,5 +23,5 @@ dependencies {
     // Database
     implementation "org.springframework:spring-orm:$spring_framework_version"
     implementation "mysql:mysql-connector-java:8.0.26"
-    implementation "org.hibernate:hibernate-core:5.5.4.Final"
+    implementation 'org.hibernate:hibernate-core:5.5.7.Final'
 }
