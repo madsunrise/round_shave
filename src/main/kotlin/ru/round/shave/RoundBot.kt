@@ -686,7 +686,7 @@ class RoundBot {
     }
 
     private fun createChooseDayKeyboard(requiredDuration: Int): List<InlineKeyboardButton> {
-        val daysAvailable = 12
+        val daysAvailable = 28
         val list = mutableListOf<InlineKeyboardButton>()
         timeManagementService.getDaysThatHaveFreeWindows(daysAvailable, requiredDuration, getUserCurrentTime())
             .forEach { current ->
