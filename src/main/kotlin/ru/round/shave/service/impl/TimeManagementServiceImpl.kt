@@ -65,34 +65,36 @@ class TimeManagementServiceImpl : TimeManagementService {
         return getAllFreeWindows(day).any { it.getDurationInMinutes() >= requiredDuration }
     }
 
-    private fun getAllFreeWindows(day: LocalDate): List<Window> {
+    override fun getAllFreeWindows(day: LocalDate): List<TimeManagementService.Window> {
         val workingHours = workingHoursService.getWorkingHours(day) ?: return emptyList()
-        val allFreeWindows = mutableListOf<Window>()
+        val allFreeWindows = mutableListOf<WindowImpl>()
         val appointments = appointmentService.getAll(day, AppointmentService.OrderBy.TIME_ASC)
 
         var windowStart = workingHours.startTime
         for (appointment in appointments) {
             val windowEnd = appointment.startTime.toLocalTime()
             if (windowEnd > windowStart) {
-                allFreeWindows.add(Window(windowStart, windowEnd))
+                allFreeWindows.add(WindowImpl(windowStart, windowEnd))
             }
             windowStart = appointment.endTime.toLocalTime()
         }
 
         val windowEnd = workingHours.endTime
         if (windowEnd > windowStart) {
-            allFreeWindows.add(Window(windowStart, windowEnd))
+            allFreeWindows.add(WindowImpl(windowStart, windowEnd))
         }
 
         return allFreeWindows
     }
 
-    private data class Window(val start: LocalTime, val end: LocalTime) {
+    private data class WindowImpl(override val start: LocalTime, override val end: LocalTime) :
+        TimeManagementService.Window {
+
         init {
             require(end > start)
         }
 
-        fun getDurationInMinutes(): Int {
+        override fun getDurationInMinutes(): Int {
             return Duration.between(start, end).toMinutes().toInt()
         }
 
@@ -108,7 +110,7 @@ class TimeManagementServiceImpl : TimeManagementService {
          * Finally, imagine that current window is (13:45, 14:30) and windowMinDuration = 45.
          * This method will return you next result: [(13:45, 14:30)]
          */
-        fun sliceByHalfHour(windowMinDuration: Int): List<Window> {
+        override fun sliceByHalfHour(windowMinDuration: Int): List<TimeManagementService.Window> {
             var first = start
             var second = minOf(first.appendToClosestHalf(), this.end)
 
@@ -121,14 +123,14 @@ class TimeManagementServiceImpl : TimeManagementService {
                 return listOf(this)
             }
 
-            val result = mutableListOf<Window>()
+            val result = mutableListOf<TimeManagementService.Window>()
             while (first < second) {
-                val window = Window(first, second)
+                val window = WindowImpl(first, second)
                 first = second
                 second = minOf(first.appendToClosestHalf(), this.end)
                 result.add(window)
                 if (second < this.end && Duration.between(second, this.end).toMinutes() < windowMinDuration) {
-                    val lastWindow = Window(window.end, this.end)
+                    val lastWindow = WindowImpl(window.end, this.end)
                     result.add(lastWindow)
                     break
                 }
@@ -145,7 +147,7 @@ class TimeManagementServiceImpl : TimeManagementService {
          * 12:40:00 -> 13:00:00
          * 12:59:59 -> 13:00:00
          */
-        fun LocalTime.appendToClosestHalf(): LocalTime {
+        private fun LocalTime.appendToClosestHalf(): LocalTime {
             val middle = LocalTime.of(hour, 30)
             return when {
                 this < middle -> middle

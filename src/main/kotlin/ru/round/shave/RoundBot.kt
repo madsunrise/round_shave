@@ -45,6 +45,9 @@ class RoundBot {
     @Autowired
     private lateinit var timeManagementService: TimeManagementService
 
+    @Autowired
+    private lateinit var workingHoursService: WorkingHoursService
+
     private val stringResources: StringResources = RussianStringResources
 
     private lateinit var bot: Bot
@@ -160,6 +163,20 @@ class RoundBot {
                     }
                 }
 
+                callbackQuery(data = CALLBACK_DATA_MY_FREE_WINDOWS) {
+                    try {
+                        LOGGER.info("Callback query: ${update.callbackQuery?.data}")
+                        val chatId = update.callbackQuery!!.message!!.chat.id
+                        val tgUser = update.callbackQuery!!.from
+                        if (isAdmin(tgUser.id)) {
+                            sendFreeWindowsToAdmin(bot, tgUser, chatId)
+                        }
+                    } catch (t: Throwable) {
+                        LOGGER.error("Error occurred!", t)
+                        sendErrorToDeveloper(bot, t.message ?: "unknown")
+                    }
+                }
+
                 callbackQuery(data = CALLBACK_DATA_SEND_LOCATION) {
                     try {
                         LOGGER.info("Callback query: ${update.callbackQuery?.data}")
@@ -196,6 +213,9 @@ class RoundBot {
                             }
                             ChooseDateCallbackHandler.canHandle(callbackData) -> {
                                 handleDayChosen(bot, callbackQuery)
+                            }
+                            ChooseDateForFreeWindowsCallbackHandler.canHandle(callbackData) -> {
+                                handleAdminHasChosenDayForFreeWindows(bot, callbackQuery)
                             }
                             ChooseTimeCallbackHandler.canHandle(callbackData) -> {
                                 handleTimeChosen(bot, callbackQuery)
@@ -299,6 +319,24 @@ class RoundBot {
     }
 
     private fun sendMyAppointmentsMessage(bot: Bot, tgUser: User, chatId: Long) {
+        val buttons = mutableListOf(
+            InlineKeyboardButton.CallbackData(
+                text = stringResources.getAppointmentsInPastButtonText(),
+                callbackData = CALLBACK_DATA_APPOINTMENTS_IN_PAST
+            ),
+            InlineKeyboardButton.CallbackData(
+                text = stringResources.getAppointmentsInFutureButtonText(),
+                callbackData = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE
+            )
+        )
+        if (isAdmin(tgUser.id)) {
+            buttons.add(
+                InlineKeyboardButton.CallbackData(
+                    text = stringResources.getMyFreeWindowsButtonText(),
+                    callbackData = CALLBACK_DATA_MY_FREE_WINDOWS
+                )
+            )
+        }
         sendPersistentMessage(
             bot = bot,
             tgUser = tgUser,
@@ -306,18 +344,7 @@ class RoundBot {
             text = stringResources.getChooseAppointmentTypeText(),
             clearLastMessageReplyMarkup = true,
             replyMarkup = InlineKeyboardMarkup.create(
-                listOf(
-                    listOf(
-                        InlineKeyboardButton.CallbackData(
-                            text = stringResources.getAppointmentsInPastButtonText(),
-                            callbackData = CALLBACK_DATA_APPOINTMENTS_IN_PAST
-                        ),
-                        InlineKeyboardButton.CallbackData(
-                            text = stringResources.getAppointmentsInFutureButtonText(),
-                            callbackData = CALLBACK_DATA_APPOINTMENTS_IN_FUTURE
-                        )
-                    )
-                )
+                listOf(buttons)
             )
         )
     }
@@ -376,6 +403,39 @@ class RoundBot {
             )
             sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = true)
         }
+    }
+
+    private fun sendFreeWindowsToAdmin(bot: Bot, tgUser: User, chatId: Long) {
+        val now = LocalDate.now(TIME_ZONE)
+        val workingHours = workingHoursService.getAll().filter { it.day >= now }
+        if (workingHours.isEmpty()) {
+            sendPersistentMessage(
+                bot = bot,
+                chatId = chatId,
+                tgUser = tgUser,
+                text = stringResources.getNoWorkingHoursFoundAdminMessage(),
+                clearLastMessageReplyMarkup = false,
+            )
+            return
+        }
+
+        val buttons = workingHours.map {
+            val day = it.day
+            val callbackData = ChooseDateForFreeWindowsCallbackHandler.convertToCallbackData(day)
+            InlineKeyboardButton.CallbackData(
+                text = VISIBLE_DATE_FORMATTER.format(day),
+                callbackData = callbackData
+            )
+        }
+
+        sendPersistentMessage(
+            bot = bot,
+            tgUser = tgUser,
+            chatId = chatId,
+            text = stringResources.getChooseDayForFreeWindowsAdminMessage(),
+            replyMarkup = InlineKeyboardMarkup.create(buttons.chunked(DAYS_PER_ROW)),
+            clearLastMessageReplyMarkup = true
+        )
     }
 
     private fun sendMessageWithAppointments(
@@ -681,7 +741,6 @@ class RoundBot {
             val callbackData = ChooseServiceCallbackHandler(serviceService).convertToCallbackData(it)
             InlineKeyboardButton.CallbackData(text = it.getDisplayName(), callbackData = callbackData)
         }
-        //return InlineKeyboardMarkup.create(buttons.map { listOf(it) })
         return InlineKeyboardMarkup.create(buttons.map { listOf(it) })
     }
 
@@ -1204,6 +1263,34 @@ class RoundBot {
         )
     }
 
+    private fun handleAdminHasChosenDayForFreeWindows(bot: Bot, callbackQuery: CallbackQuery) {
+        val chatId = callbackQuery.message!!.chat.id
+        val chosenDate = ChooseDateForFreeWindowsCallbackHandler.convertFromCallbackData(callbackQuery.data)
+        val dateStr = VISIBLE_DATE_FORMATTER_FULL.format(chosenDate)
+        val windows = timeManagementService.getAllFreeWindows(chosenDate)
+        val sb = StringBuilder(stringResources.getFreeWindowsForDayText(dateStr))
+        sb.append('\n').append('\n')
+        if (windows.isEmpty()) {
+            sb.append(stringResources.getNoFreeWindowsFoundAdminMessage())
+        } else {
+            for (window in windows) {
+                val start = VISIBLE_TIME_FORMATTER.format(window.start)
+                val end = VISIBLE_TIME_FORMATTER.format(window.end)
+                val line = "$start — $end"
+                sb.append(line)
+            }
+        }
+
+        sendReplaceableMessage(
+            bot = bot,
+            tgUser = callbackQuery.from,
+            chatId = chatId,
+            text = sb.toString(),
+            clearLastMessageReplyMarkup = false,
+            keepMessage = false
+        )
+    }
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(RoundBot::class.java.simpleName)
         private const val TOKEN_ENVIRONMENT_VARIABLE = "ROUND_SHAVE_TOKEN"
@@ -1217,6 +1304,7 @@ class RoundBot {
         private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_PAST = "appointments_in_past"
         private const val CALLBACK_DATA_APPOINTMENTS_IN_FUTURE = "appointments_in_future"
+        private const val CALLBACK_DATA_MY_FREE_WINDOWS = "free_admin_windows"
         private const val CALLBACK_DATA_SEND_LOCATION = "callback_data_send_location"
 
         private const val DAYS_PER_ROW = 4

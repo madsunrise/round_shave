@@ -190,6 +190,26 @@ object RussianStringResources : StringResources {
         return "Предстоящие"
     }
 
+    override fun getMyFreeWindowsButtonText(): String {
+        return "Свободные окна"
+    }
+
+    override fun getFreeWindowsForDayText(day: String): String {
+        return "Свободные окна $day"
+    }
+
+    override fun getNoFreeWindowsFoundAdminMessage(): String {
+        return "Свободных окон нет :("
+    }
+
+    override fun getNoWorkingHoursFoundAdminMessage(): String {
+        return "Рабочие дни отсутствуют"
+    }
+
+    override fun getChooseDayForFreeWindowsAdminMessage(): String {
+        return "Выберите день"
+    }
+
     override fun getAppointmentsInPastMessage(): String {
         return "Прошедшие записи:"
     }

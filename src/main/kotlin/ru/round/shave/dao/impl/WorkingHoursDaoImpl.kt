@@ -19,6 +19,18 @@ class WorkingHoursDaoImpl : WorkingHoursDao {
         em.flush()
     }
 
+    override fun getAll(): List<WorkingHours> {
+        val cb = em.criteriaBuilder
+        val query = cb.createQuery(WorkingHours::class.java)
+        val root = query.from(WorkingHours::class.java)
+
+        query
+            .select(root)
+            .orderBy(cb.asc(root.get<LocalDate>("day")))
+
+        return em.createQuery(query).resultList
+    }
+
     override fun getWorkingHours(day: LocalDate): WorkingHours? {
         val cb = em.criteriaBuilder
         val query = cb.createQuery(WorkingHours::class.java)

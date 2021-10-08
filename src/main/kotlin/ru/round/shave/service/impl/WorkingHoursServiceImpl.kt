@@ -19,6 +19,10 @@ open class WorkingHoursServiceImpl : WorkingHoursService {
         workingHoursDao.insert(entity)
     }
 
+    override fun getAll(): List<WorkingHours> {
+        return workingHoursDao.getAll()
+    }
+
     override fun getWorkingHours(day: LocalDate): WorkingHours? {
         return workingHoursDao.getWorkingHours(day)
     }

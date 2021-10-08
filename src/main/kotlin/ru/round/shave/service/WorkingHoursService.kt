@@ -6,6 +6,8 @@ import java.time.LocalDate
 interface WorkingHoursService {
     fun insert(entity: WorkingHours)
 
+    fun getAll(): List<WorkingHours>
+
     fun getWorkingHours(day: LocalDate): WorkingHours?
 
     fun getTheMostDistantWorkingHours(): WorkingHours?

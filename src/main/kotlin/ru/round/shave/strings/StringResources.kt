@@ -71,6 +71,16 @@ interface StringResources {
 
     fun getAppointmentsInFutureButtonText(): String
 
+    fun getMyFreeWindowsButtonText(): String
+
+    fun getFreeWindowsForDayText(day: String): String
+
+    fun getNoWorkingHoursFoundAdminMessage(): String
+
+    fun getChooseDayForFreeWindowsAdminMessage(): String
+
+    fun getNoFreeWindowsFoundAdminMessage(): String
+
     fun getAppointmentsInPastMessage(): String
 
     fun getAppointmentsInPastNotFoundMessage(): String
