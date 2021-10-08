@@ -1299,7 +1299,7 @@ class RoundBot {
 
         private val VISIBLE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM")
         private val VISIBLE_DATE_FORMATTER_FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        val VISIBLE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH.mm")
+        val VISIBLE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
         private const val CALLBACK_DATA_RESET = "callback_data_reset"
         private const val CALLBACK_DATA_CONFIRM = "callback_data_confirm"
