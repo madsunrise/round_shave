@@ -191,7 +191,7 @@ object RussianStringResources : StringResources {
     }
 
     override fun getMyFreeWindowsButtonText(): String {
-        return "Свободные окна"
+        return "Окна"
     }
 
     override fun getFreeWindowsForDayText(day: String): String {
