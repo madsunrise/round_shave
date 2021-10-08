@@ -1278,6 +1278,7 @@ class RoundBot {
                 val end = VISIBLE_TIME_FORMATTER.format(window.end)
                 val line = "$start — $end"
                 sb.append(line)
+                sb.append('\n')
             }
         }
 
