@@ -6,7 +6,7 @@ import ru.round.shave.entity.User
 interface StringResources {
     fun getHelloMessage(): String
 
-    fun getErrorMessage(): String
+    fun getErrorOccuredWhileMakingAppointmentMessage(): String
 
     fun getChooseServiceTypeMessage(): String
 
@@ -132,4 +132,18 @@ interface StringResources {
     fun getMasterContacts(): String
 
     fun getSendLocationButtonText(): String
+
+    fun getAdminMessageCouldNotDeleteWorkingHoursAsItNotExists(day: String): String
+
+    fun getAdminMessageDeletingWorkingHoursSuccessful(day: String): String
+
+    fun getAdminMessageCouldNotAddWorkingHoursAsItAlreadyExists(day: String, startTime: String, endTime: String): String
+
+    fun getAdminMessageAddingWorkingHoursSuccessful(
+        day: String,
+        startTime: String,
+        endTime: String
+    ): String
+
+    fun getUnknownErrorMessage(): String
 }

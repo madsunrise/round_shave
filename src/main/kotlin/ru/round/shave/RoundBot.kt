@@ -15,6 +15,7 @@ import ru.round.shave.callback.*
 import ru.round.shave.entity.Appointment
 import ru.round.shave.entity.Back
 import ru.round.shave.entity.Service
+import ru.round.shave.entity.WorkingHours
 import ru.round.shave.exception.AlreadyExistException
 import ru.round.shave.service.*
 import ru.round.shave.strings.RussianStringResources
@@ -25,6 +26,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.regex.Pattern
 import javax.annotation.PostConstruct
 
 @Component
@@ -238,10 +240,32 @@ class RoundBot {
 
                 text {
                     val text = update.message!!.text
-                    if (!text.isNullOrBlank() && Command.findCommand(text) == null) {
+                    if (text.isNullOrBlank()) {
+                        return@text
+                    }
+                    val tgUser = update.message!!.from!!
+                    val chatId = update.message!!.chat.id
+
+                    val startedWithDateRegex = Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4} .*")
+                    if (startedWithDateRegex.matcher(text).matches() && isAdmin(tgUser.id)) {
+                        try {
+                            processWorkingHoursChangeMessage(text, tgUser, chatId)
+                        } catch (e: Exception) {
+                            LOGGER.warn("Failed to change working hours", e)
+                            sendPersistentMessage(
+                                bot = bot,
+                                tgUser = tgUser,
+                                chatId = chatId,
+                                text = stringResources.getUnknownErrorMessage(),
+                                clearLastMessageReplyMarkup = true
+                            )
+
+                        }
+                        return@text
+                    }
+
+                    if (Command.findCommand(text) == null) {
                         LOGGER.info("Received text: $text. Sending help.")
-                        val chatId = update.message!!.chat.id
-                        val tgUser = update.message!!.from!!
                         if (!isAdmin(tgUser.id)) {
                             sendHelpMessage(bot, tgUser, chatId)
                         }
@@ -255,6 +279,55 @@ class RoundBot {
             }
         }
         bot.startPolling()
+    }
+
+    private fun processWorkingHoursChangeMessage(text: String, tgUser: User, chatId: Long) {
+        val split = text.split(" ")
+        val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        val dateStr = split.first()
+        val date = LocalDate.parse(dateStr, formatter)
+        val message: String
+        if (split[1] == "-") {
+            // Removing working day
+            val hours = workingHoursService.getWorkingHours(date)
+            message = if (hours == null) {
+                stringResources.getAdminMessageCouldNotDeleteWorkingHoursAsItNotExists(dateStr)
+            } else {
+                workingHoursService.delete(hours)
+                stringResources.getAdminMessageDeletingWorkingHoursSuccessful(dateStr)
+            }
+        } else {
+            // Adding new working day
+            val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+            val existing = workingHoursService.getWorkingHours(date)
+            if (existing != null) {
+                message = stringResources.getAdminMessageCouldNotAddWorkingHoursAsItAlreadyExists(
+                    day = dateStr,
+                    startTime = existing.startTime.format(timeFormatter),
+                    endTime = existing.endTime.format(timeFormatter)
+                )
+            } else {
+                val timeStartStr = split[1]
+                val timeEndStr = split[2]
+                val timeStart = LocalTime.parse(timeStartStr, timeFormatter)
+                val timeEnd = LocalTime.parse(timeEndStr, timeFormatter)
+                val entity = WorkingHours(day = date, startTime = timeStart, endTime = timeEnd)
+                workingHoursService.insert(entity)
+                message = stringResources.getAdminMessageAddingWorkingHoursSuccessful(
+                    day = dateStr,
+                    startTime = timeStartStr,
+                    endTime = timeEndStr
+                )
+            }
+        }
+
+        sendPersistentMessage(
+            bot,
+            tgUser,
+            chatId,
+            message,
+            clearLastMessageReplyMarkup = true
+        )
     }
 
     private fun sendHelloMessage(bot: Bot, tgUser: User, chatId: Long) {
@@ -613,7 +686,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getErrorMessage(),
+                text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
@@ -691,7 +764,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getErrorMessage(),
+                text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
@@ -708,7 +781,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getErrorMessage(),
+                text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
@@ -778,7 +851,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getErrorMessage(),
+                text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
@@ -866,7 +939,7 @@ class RoundBot {
                 bot = bot,
                 tgUser = callbackQuery.from,
                 chatId = chatId,
-                text = stringResources.getErrorMessage(),
+                text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                 replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                 clearLastMessageReplyMarkup = true,
                 keepMessage = false
@@ -944,7 +1017,7 @@ class RoundBot {
                         bot = bot,
                         tgUser = callbackQuery.from,
                         chatId = chatId,
-                        text = stringResources.getErrorMessage(),
+                        text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                         clearLastMessageReplyMarkup = true,
                         keepMessage = false
@@ -962,7 +1035,7 @@ class RoundBot {
                         bot = bot,
                         tgUser = callbackQuery.from,
                         chatId = chatId,
-                        text = stringResources.getErrorMessage(),
+                        text = stringResources.getErrorOccuredWhileMakingAppointmentMessage(),
                         replyMarkup = InlineKeyboardMarkup.createSingleButton(createGoToBeginningButton()),
                         clearLastMessageReplyMarkup = true,
                         keepMessage = false

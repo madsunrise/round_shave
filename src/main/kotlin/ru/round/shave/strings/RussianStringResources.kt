@@ -11,7 +11,7 @@ object RussianStringResources : StringResources {
         return "Вас приветствует Round Shave Bot!"
     }
 
-    override fun getErrorMessage(): String {
+    override fun getErrorOccuredWhileMakingAppointmentMessage(): String {
         return "К сожалению, произошла ошибка. Повторите процедуру записи."
     }
 
@@ -326,5 +326,33 @@ object RussianStringResources : StringResources {
 
     override fun getSendLocationButtonText(): String {
         return "Карта"
+    }
+
+    override fun getAdminMessageCouldNotDeleteWorkingHoursAsItNotExists(day: String): String {
+        return "Операция не выполнена: $day не было в расписании."
+    }
+
+    override fun getAdminMessageDeletingWorkingHoursSuccessful(day: String): String {
+        return "Запись на $day успешно закрыта."
+    }
+
+    override fun getAdminMessageCouldNotAddWorkingHoursAsItAlreadyExists(
+        day: String,
+        startTime: String,
+        endTime: String
+    ): String {
+        return "Операция не выполнена: на $day запись была открыта ранее. Рабочие часы: $startTime - $endTime."
+    }
+
+    override fun getAdminMessageAddingWorkingHoursSuccessful(
+        day: String,
+        startTime: String,
+        endTime: String
+    ): String {
+        return "Запись на $day успешно открыта. Рабочие часы: $startTime - $endTime."
+    }
+
+    override fun getUnknownErrorMessage(): String {
+        return "Произошла ошибка"
     }
 }
