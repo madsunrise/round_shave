@@ -328,6 +328,9 @@ class RoundBot {
             message,
             clearLastMessageReplyMarkup = true
         )
+
+        // Just for stat
+        sendToDeveloper(bot, message)
     }
 
     private fun sendHelloMessage(bot: Bot, tgUser: User, chatId: Long) {
@@ -1316,6 +1319,14 @@ class RoundBot {
         bot.sendMessage(
             chatId = ChatId.fromId(developer.chatId),
             text = "Achtung! $error"
+        )
+    }
+
+    private fun sendToDeveloper(bot: Bot, message: String) {
+        val developer = userService.getById(DEVELOPER_USER_ID) ?: return
+        bot.sendMessage(
+            chatId = ChatId.fromId(developer.chatId),
+            text = message
         )
     }
 
