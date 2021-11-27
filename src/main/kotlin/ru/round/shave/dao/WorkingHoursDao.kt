@@ -13,4 +13,6 @@ interface WorkingHoursDao {
     fun getTheMostDistantWorkingHours(): WorkingHours?
 
     fun deleteAllBefore(beforeInclusive: LocalDate): Int
+
+    fun delete(entity: WorkingHours)
 }

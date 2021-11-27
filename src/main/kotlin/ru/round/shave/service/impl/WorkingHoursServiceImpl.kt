@@ -34,4 +34,8 @@ open class WorkingHoursServiceImpl : WorkingHoursService {
     override fun deleteAllBefore(beforeInclusive: LocalDate): Int {
         return workingHoursDao.deleteAllBefore(beforeInclusive)
     }
+
+    override fun delete(entity: WorkingHours) {
+        return workingHoursDao.delete(entity)
+    }
 }

@@ -65,4 +65,9 @@ class WorkingHoursDaoImpl : WorkingHoursDao {
         query.where(cb.lessThanOrEqualTo(root.get("day"), beforeInclusive))
         return em.createQuery(query).executeUpdate()
     }
+
+    override fun delete(entity: WorkingHours) {
+        em.remove(if (em.contains(entity)) entity else em.merge(entity))
+        em.flush()
+    }
 }
