@@ -452,7 +452,7 @@ class RoundBot {
             if (isAdmin(user.id)) {
                 val maxRecords = 50
                 if (appointments.size > maxRecords) {
-                    appointments = appointments.subList(0, maxRecords)
+                    appointments = appointments.takeLast(maxRecords)
                     sendPersistentMessage(
                         bot = bot,
                         chatId = chatId,
