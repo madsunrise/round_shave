@@ -214,6 +214,10 @@ object RussianStringResources : StringResources {
         return "Прошедшие записи:"
     }
 
+    override fun getShownLastNAppointments(n: Int): String {
+        return "Показаны последние $n записей."
+    }
+
     override fun getAppointmentsInPastNotFoundMessage(): String {
         return "Прошедших записей не найдено."
     }

@@ -428,7 +428,7 @@ class RoundBot {
     private fun sendAppointmentsInPastMessage(bot: Bot, tgUser: User, chatId: Long) {
         val user = userService.getOrCreate(tgUser, chatId)
         LOGGER.info("Sending appointments in past for ${user.getLogInfo()}")
-        val appointments = appointmentService.getAppointmentsInPast(
+        var appointments = appointmentService.getAppointmentsInPast(
             currentTime = getUserCurrentTime(),
             user = if (isAdmin(user.id)) null else user,
             orderBy = AppointmentService.OrderBy.TIME_ASC
@@ -449,6 +449,19 @@ class RoundBot {
                 text = stringResources.getAppointmentsInPastMessage(),
                 clearLastMessageReplyMarkup = false,
             )
+            if (isAdmin(user.id)) {
+                val maxRecords = 50
+                if (appointments.size > maxRecords) {
+                    appointments = appointments.subList(0, maxRecords)
+                    sendPersistentMessage(
+                        bot = bot,
+                        chatId = chatId,
+                        tgUser = tgUser,
+                        text = stringResources.getShownLastNAppointments(maxRecords),
+                        clearLastMessageReplyMarkup = false,
+                    )
+                }
+            }
             sendMessageWithAppointments(bot, tgUser, chatId, appointments, addCancelButton = false)
         }
     }

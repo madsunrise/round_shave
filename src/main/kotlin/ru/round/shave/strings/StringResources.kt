@@ -83,6 +83,8 @@ interface StringResources {
 
     fun getAppointmentsInPastMessage(): String
 
+    fun getShownLastNAppointments(n: Int): String
+
     fun getAppointmentsInPastNotFoundMessage(): String
 
     fun getAppointmentsInFutureMessage(): String
