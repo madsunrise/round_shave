@@ -338,7 +338,9 @@ class RoundBot {
         )
 
         // Just for stat
-        sendToDeveloper(bot, message)
+        if (tgUser.id != DEVELOPER_USER_ID) {
+            sendToDeveloper(bot, message)
+        }
     }
 
     private fun sendHelloMessage(bot: Bot, tgUser: User, chatId: Long) {
