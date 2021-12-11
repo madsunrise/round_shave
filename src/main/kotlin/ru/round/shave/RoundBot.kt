@@ -246,7 +246,7 @@ class RoundBot {
                     val tgUser = update.message!!.from!!
                     val chatId = update.message!!.chat.id
 
-                    val startedWithDateRegex = Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4} .*")
+                    val startedWithDateRegex = Pattern.compile("\\d{2}\\.\\d{2} .*")
                     if (startedWithDateRegex.matcher(text).matches() && isAdmin(tgUser.id)) {
                         try {
                             processWorkingHoursChangeMessage(text, tgUser, chatId)
@@ -283,18 +283,19 @@ class RoundBot {
 
     private fun processWorkingHoursChangeMessage(text: String, tgUser: User, chatId: Long) {
         val split = text.split(" ")
+        val dateWithoutYear = split.first()
+        val dateWithYear = "$dateWithoutYear.${LocalDate.now().year}"
         val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-        val dateStr = split.first()
-        val date = LocalDate.parse(dateStr, formatter)
+        val date = LocalDate.parse(dateWithYear, formatter)
         val message: String
         if (split[1] == "-") {
             // Removing working day
             val hours = workingHoursService.getWorkingHours(date)
             message = if (hours == null) {
-                stringResources.getAdminMessageCouldNotDeleteWorkingHoursAsItNotExists(dateStr)
+                stringResources.getAdminMessageCouldNotDeleteWorkingHoursAsItNotExists(dateWithYear)
             } else {
                 workingHoursService.delete(hours)
-                stringResources.getAdminMessageDeletingWorkingHoursSuccessful(dateStr)
+                stringResources.getAdminMessageDeletingWorkingHoursSuccessful(dateWithYear)
             }
         } else {
             // Adding new working day
@@ -302,7 +303,7 @@ class RoundBot {
             val existing = workingHoursService.getWorkingHours(date)
             if (existing != null) {
                 message = stringResources.getAdminMessageCouldNotAddWorkingHoursAsItAlreadyExists(
-                    day = dateStr,
+                    day = dateWithYear,
                     startTime = existing.startTime.format(timeFormatter),
                     endTime = existing.endTime.format(timeFormatter)
                 )
@@ -314,7 +315,7 @@ class RoundBot {
                 val entity = WorkingHours(day = date, startTime = timeStart, endTime = timeEnd)
                 workingHoursService.insert(entity)
                 message = stringResources.getAdminMessageAddingWorkingHoursSuccessful(
-                    day = dateStr,
+                    day = dateWithYear,
                     startTime = timeStartStr,
                     endTime = timeEndStr
                 )
