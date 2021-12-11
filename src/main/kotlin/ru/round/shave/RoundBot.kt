@@ -284,8 +284,15 @@ class RoundBot {
     private fun processWorkingHoursChangeMessage(text: String, tgUser: User, chatId: Long) {
         val split = text.split(" ")
         val dateWithoutYear = split.first()
-        val dateWithYear = "$dateWithoutYear.${LocalDate.now().year}"
+        val currentYear = LocalDate.now().year
         val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        val dateWithYear =
+            if (LocalDate.parse("$dateWithoutYear.$currentYear", formatter).isBefore(LocalDate.now())) {
+                "$dateWithoutYear.${currentYear + 1}"
+            } else {
+                "$dateWithoutYear.$currentYear"
+            }
+
         val date = LocalDate.parse(dateWithYear, formatter)
         val message: String
         if (split[1] == "-") {
